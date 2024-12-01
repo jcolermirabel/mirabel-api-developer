@@ -9,7 +9,8 @@ const getConnectionConfig = (config) => {
     server,
     port,
     database: config.database,
-    username: config.username
+    username: config.username,
+    name: config.name
   });
 
   const connectionConfig = {
@@ -28,7 +29,8 @@ const getConnectionConfig = (config) => {
         data: true,
         payload: true,
         token: true
-      }
+      },
+      serverName: config.name
     },
     pool: {
       max: 10,

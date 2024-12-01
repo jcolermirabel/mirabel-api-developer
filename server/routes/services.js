@@ -32,6 +32,13 @@ const testConnection = async (req, res, next) => {
     if (password.includes(':')) {
       try {
         console.log('Attempting to decrypt password...');
+        console.log('Password format:', {
+          length: password.length,
+          containsColon: password.includes(':'),
+          firstColon: password.indexOf(':'),
+          lastColon: password.lastIndexOf(':')
+        });
+        
         password = decryptDatabasePassword(password);
         console.log('Password decrypted successfully');
       } catch (decryptError) {

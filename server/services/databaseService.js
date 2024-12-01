@@ -24,35 +24,37 @@ const getConnectionConfig = (config) => {
       encrypt: false,
       enableArithAbort: true,
       validateBulkLoadParameters: false,
+      connectTimeout: 30000,
+      requestTimeout: 30000,
+      packetSize: 32768,
       debug: {
         packet: true,
         data: true,
         payload: true,
         token: true
       },
-      serverName: config.name
+      serverName: config.name,
+      rowCollectionOnRequestCompletion: true
     },
     pool: {
       max: 10,
       min: 0,
-      idleTimeoutMillis: 30000
-    },
-    requestTimeout: 30000,
-    connectionTimeout: 30000
+      idleTimeoutMillis: 30000,
+      acquireTimeoutMillis: 30000,
+      createTimeoutMillis: 30000,
+      destroyTimeoutMillis: 30000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 1000
+    }
   };
 
-  console.log('Final SQL Config:', {
-    server: connectionConfig.server,
-    port: connectionConfig.port,
-    database: connectionConfig.database,
-    user: connectionConfig.user,
-    options: connectionConfig.options,
-    pool: connectionConfig.pool,
-    timeouts: {
-      request: connectionConfig.requestTimeout,
-      connection: connectionConfig.connectionTimeout
-    }
-  });
+  // Try both formats for server name
+  if (port) {
+    console.log('Testing connection string formats:');
+    console.log(`1. ${server},${port}`);
+    console.log(`2. ${server}:${port}`);
+    console.log(`3. ${server} port ${port}`);
+  }
 
   return connectionConfig;
 };

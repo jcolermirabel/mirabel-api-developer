@@ -3,7 +3,6 @@ const cors = require('cors');
 const session = require('express-session');
 const mongoose = require('mongoose');
 const helmet = require('helmet');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { apiKeyMiddleware, authMiddleware } = require('./middleware/auth');
 const { consolidatedApiKeyMiddleware } = require('./middleware/consolidatedAuthMiddleware');
 const { logger } = require('./middleware/logger');
@@ -59,10 +58,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'X-Mirabel-API'],
   exposedHeaders: ['X-CSRF-Token']
 }));
-
-// Rate limiting
-app.use('/api/auth', authLimiter);
-app.use('/api', apiLimiter);
 
 // Debug middleware - only in development
 if (process.env.NODE_ENV === 'development') {

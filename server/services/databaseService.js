@@ -1,31 +1,40 @@
 const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
-  const server = `${config.host}:${config.port}`;
-
   console.log('Building SQL config with:', {
-    server,
+    server: config.host,
+    port: config.port,
     database: config.database,
-    username: config.username,
-    name: config.name
+    username: config.username
   });
 
   const connectionConfig = {
-    server,
+    server: config.host,
     database: config.database,
     user: config.username,
     password: config.password,
+    driver: 'tedious',
     options: {
       trustServerCertificate: true,
       encrypt: false,
       enableArithAbort: true,
-      validateBulkLoadParameters: false,
-      connectTimeout: 30000,
-      requestTimeout: 30000,
+      port: parseInt(config.port),
       instanceName: '',
-      port: parseInt(config.port)
+      useUTC: true
+    },
+    pool: {
+      max: 1,
+      min: 1
     }
   };
+
+  console.log('Tedious config:', {
+    server: connectionConfig.server,
+    options: {
+      ...connectionConfig.options,
+      port: connectionConfig.options.port
+    }
+  });
 
   return connectionConfig;
 };

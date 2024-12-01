@@ -5,6 +5,9 @@ server/.env
 !.env.example
 !server/.env.example
 server/.env.production
+server/.env.backup
+server/.env.old
+server/.env.production.old
 
 # Dependencies
 node_modules/

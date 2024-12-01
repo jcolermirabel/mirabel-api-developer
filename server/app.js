@@ -16,8 +16,15 @@ const SERVICES_USING_NEW_AUTH = ['salesdemo_staging'];
 
 const app = express();
 
+// Debug proxy settings
+console.log('Environment settings:', {
+  NODE_ENV: process.env.NODE_ENV,
+  TRUST_PROXY: process.env.TRUST_PROXY,
+  RATE_LIMIT_BEHIND_PROXY: process.env.RATE_LIMIT_BEHIND_PROXY
+});
+
 // Trust proxy configuration - MUST be before any other middleware
-app.set('trust proxy', true);
+app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 app.enable('trust proxy');
 
 // Also set it explicitly for rate limiter

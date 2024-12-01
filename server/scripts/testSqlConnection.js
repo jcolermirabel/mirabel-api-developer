@@ -8,20 +8,29 @@ const decryptPassword = (encryptedPassword) => {
   try {
     const [password, iv] = encryptedPassword.split(':');
     
-    console.log('Decryption attempt:', {
-      encryptionKey: process.env.ENCRYPTION_KEY?.length,
-      password: password.length,
-      iv: iv?.length
+    console.log('Decryption details:', {
+      encryptionKey: process.env.ENCRYPTION_KEY,
+      encryptionKeyLength: process.env.ENCRYPTION_KEY?.length,
+      passwordLength: password?.length,
+      ivLength: iv?.length
     });
 
-    const decipher = crypto.createDecipheriv(
-      'aes-256-cbc',
-      Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
-      Buffer.from(iv, 'hex')
-    );
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY not found in environment');
+    }
 
+    const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+    const ivBuffer = Buffer.from(iv, 'hex');
+    
+    console.log('Buffer lengths:', {
+      keyBuffer: keyBuffer.length,
+      ivBuffer: ivBuffer.length
+    });
+
+    const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, ivBuffer);
     let decrypted = decipher.update(Buffer.from(password, 'hex'));
     decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
     return decrypted.toString();
   } catch (error) {
     console.error('Decryption error:', error);

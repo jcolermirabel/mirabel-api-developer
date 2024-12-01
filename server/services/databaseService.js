@@ -3,16 +3,8 @@ const sql = require('mssql');
 const getConnectionConfig = (config) => {
   const port = parseInt(config.port);
 
-  console.log('Building SQL config with:', {
-    server: config.host,
-    port,
-    database: config.database,
-    username: config.username
-  });
-
   return {
     server: config.host,
-    port,
     database: config.database,
     user: config.username,
     password: config.password,
@@ -20,9 +12,16 @@ const getConnectionConfig = (config) => {
       trustServerCertificate: true,
       encrypt: false,
       enableArithAbort: true,
-      port,  // Specify port in options too
+      port: port,
       connectTimeout: 30000,
-      requestTimeout: 30000
+      requestTimeout: 30000,
+      instanceName: '',
+      useUTC: true
+    },
+    pool: {
+      min: 0,
+      max: 1,
+      idleTimeoutMillis: 30000
     }
   };
 };

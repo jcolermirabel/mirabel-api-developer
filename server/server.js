@@ -21,25 +21,23 @@ console.log('Environment:', {
 const app = express();
 
 // Trust proxy configuration - MUST be first!
-app.set('trust proxy', true);
-app.enable('trust proxy');
+app.set('trust proxy', '*');
 
 // Rate limiting configuration
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  skip: (req) => {
-    // Log request details
+  trustProxy: true,
+  handler: (req, res) => {
     console.log('Rate limit check:', {
       ip: req.ip,
       ips: req.ips,
-      headers: {
-        'x-forwarded-for': req.headers['x-forwarded-for'],
-        'x-real-ip': req.headers['x-real-ip']
-      }
+      headers: req.headers
     });
-    return false; // Don't actually skip
+    res.status(429).json({
+      message: 'Too many requests'
+    });
   }
 });
 

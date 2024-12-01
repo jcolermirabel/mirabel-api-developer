@@ -1,41 +1,31 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-const persistentAuthMiddleware = (req, res, next) => {
-  const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
+const persistentAuth = async (req, res, next) => {
   try {
+    // Check for token in cookies
+    const token = req.cookies.token;
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Check if token is about to expire (less than 5 minutes remaining)
-    const tokenExp = decoded.exp * 1000; // Convert to milliseconds
-    const fiveMinutes = 5 * 60 * 1000;
-    
-    if (tokenExp - Date.now() < fiveMinutes) {
-      // Generate new token
-      const newToken = jwt.sign(
-        { userId: decoded.userId },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-      
-      // Set new cookie
-      res.cookie('token', newToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-      });
+    // Get user
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
     }
-    
-    req.user = decoded;
+
+    // Attach user to request
+    req.user = user;
     next();
-  } catch (err) {
+  } catch (error) {
+    console.error('Auth error:', error);
     res.status(401).json({ message: 'Invalid token' });
   }
 };
 
-module.exports = persistentAuthMiddleware; 
+module.exports = persistentAuth; 

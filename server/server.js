@@ -8,7 +8,7 @@ const apiKeyAuth = require('./middleware/apiKeyAuth');
 const servicesRouter = require('./routes/services');
 const documentationRouter = require('./routes/documentation');
 const cookieParser = require('cookie-parser');
-const persistentAuthMiddleware = require('./middleware/persistentAuthMiddleware');
+const persistentAuth = require('./middleware/persistentAuth');
 
 // Debug environment variables
 console.log('Environment:', {
@@ -48,13 +48,13 @@ connectDB().then(() => {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/public', apiKeyAuth, require('./routes/publicApi'));
-app.use('/api/services', persistentAuthMiddleware, servicesRouter);
-app.use('/api/roles', persistentAuthMiddleware, require('./routes/roles'));
-app.use('/api/applications', persistentAuthMiddleware, require('./routes/applications'));
-app.use('/api/reports', persistentAuthMiddleware, require('./routes/reports'));
-app.use('/api/users', persistentAuthMiddleware, require('./routes/users'));
-app.use('/api/dashboard', persistentAuthMiddleware, require('./routes/dashboard'));
-app.use('/api/documentation', persistentAuthMiddleware, documentationRouter);
+app.use('/api/services', persistentAuth, servicesRouter);
+app.use('/api/roles', persistentAuth, require('./routes/roles'));
+app.use('/api/applications', persistentAuth, require('./routes/applications'));
+app.use('/api/reports', persistentAuth, require('./routes/reports'));
+app.use('/api/users', persistentAuth, require('./routes/users'));
+app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
+app.use('/api/documentation', persistentAuth, documentationRouter);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

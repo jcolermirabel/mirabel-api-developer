@@ -1,4 +1,4 @@
-const sql = require('mssql');
+const { Connection, Request } = require('tedious');
 
 const getConnectionConfig = (config) => {
   console.log('Building SQL config with:', {
@@ -10,21 +10,23 @@ const getConnectionConfig = (config) => {
 
   const connectionConfig = {
     server: config.host,
-    database: config.database,
-    user: config.username,
-    password: config.password,
-    driver: 'tedious',
+    authentication: {
+      type: 'default',
+      options: {
+        userName: config.username,
+        password: config.password
+      }
+    },
     options: {
+      port: parseInt(config.port),
+      database: config.database,
       trustServerCertificate: true,
       encrypt: false,
       enableArithAbort: true,
-      port: parseInt(config.port),
-      instanceName: '',
-      useUTC: true
-    },
-    pool: {
-      max: 1,
-      min: 1
+      useUTC: true,
+      connectTimeout: 30000,
+      requestTimeout: 30000,
+      rowCollectionOnRequestCompletion: true
     }
   };
 
@@ -40,60 +42,49 @@ const getConnectionConfig = (config) => {
 };
 
 const testConnection = async (config) => {
-  let pool;
-  try {
+  return new Promise((resolve, reject) => {
     console.log('\n=== Starting SQL Connection Test ===');
-    console.log('Input config:', {
-      ...config,
-      password: '[REDACTED]'
+    
+    const connection = new Connection(getConnectionConfig(config));
+
+    connection.on('connect', (err) => {
+      if (err) {
+        console.error('\n=== SQL Connection Test Failed ===');
+        console.error('Error details:', err);
+        connection.close();
+        resolve({ 
+          success: false, 
+          error: `Connection failed: ${err.message}`,
+          details: {
+            code: err.code,
+            state: err.state
+          }
+        });
+        return;
+      }
+
+      console.log('\nConnection successful, executing test query...');
+      const request = new Request('SELECT 1 as test', (err, rowCount) => {
+        if (err) {
+          console.error('Query failed:', err);
+          connection.close();
+          resolve({ 
+            success: false, 
+            error: `Query failed: ${err.message}`
+          });
+          return;
+        }
+        
+        console.log('Query successful, rows:', rowCount);
+        connection.close();
+        resolve({ success: true });
+      });
+
+      connection.execSql(request);
     });
 
-    const connectionConfig = getConnectionConfig(config);
-    
-    console.log('\nCreating connection pool...');
-    pool = new sql.ConnectionPool(connectionConfig);
-    
-    console.log('\nAttempting to connect...');
-    await pool.connect();
-    
-    console.log('\nConnection successful, executing test query...');
-    const result = await pool.request().query('SELECT 1 as test');
-    console.log('Test query result:', result);
-    
-    return { success: true };
-  } catch (error) {
-    console.error('\n=== SQL Connection Test Failed ===');
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      state: error.state,
-      serverName: error.serverName,
-      className: error.className,
-      lineNumber: error.lineNumber
-    });
-    console.error('Full error:', error);
-    console.error('Stack trace:', error.stack);
-    
-    return { 
-      success: false, 
-      error: `Connection failed: ${error.message}`,
-      details: {
-        code: error.code,
-        state: error.state,
-        serverName: error.serverName
-      }
-    };
-  } finally {
-    if (pool) {
-      try {
-        console.log('\nClosing connection pool...');
-        await pool.close();
-        console.log('Connection pool closed successfully');
-      } catch (closeError) {
-        console.error('Error closing pool:', closeError);
-      }
-    }
-  }
+    connection.connect();
+  });
 };
 
 module.exports = {

@@ -8,109 +8,50 @@ const { encryptDatabasePassword } = require('../utils/databaseEncryption');
 
 // Test connection handler with enhanced logging
 const testConnection = async (req, res) => {
-  let pool;
   try {
-    console.log('Raw incoming request:', {
-      body: {
-        ...req.body,
-        password: req.body.password ? '[REDACTED]' : undefined
-      },
-      method: req.method,
-      path: req.path,
-      contentType: req.headers['content-type']
+    console.log('\n=== Starting Service Test Connection ===');
+    console.log('Request body:', {
+      ...req.body,
+      password: '[REDACTED]'
     });
 
-    if (!req.body.username || !req.body.password || !req.body.host || !req.body.port || !req.body.database) {
-      logger.error('Missing required connection parameters', {
-        hasUsername: !!req.body.username,
-        hasPassword: !!req.body.password,
-        hasHost: !!req.body.host,
-        hasPort: !!req.body.port,
-        hasDatabase: !!req.body.database
-      });
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required connection parameters'
-      });
-    }
-
-    // Decrypt password if it's in encrypted format
+    // Decrypt password if needed
     let password = req.body.password;
-    if (password.includes(':')) {  // Check if password is in encrypted format
+    if (password.includes(':')) {
       try {
+        console.log('Attempting to decrypt password...');
         password = decryptDatabasePassword(password);
+        console.log('Password decrypted successfully');
       } catch (decryptError) {
-        // If decryption fails, use the password as-is (it might be a plain password for testing)
-        logger.info('Password decryption skipped - using as-is for testing');
+        console.error('Password decryption failed:', decryptError);
+        return res.status(500).json({
+          success: false,
+          error: 'Password decryption failed'
+        });
       }
     }
 
-    const config = {
-      user: req.body.username,
-      password: password,
-      server: req.body.host,
-      port: parseInt(req.body.port),
-      database: req.body.database,
-      options: {
-        encrypt: true,
-        trustServerCertificate: true,
-        enableArithAbort: true,
-        cryptoCredentialsDetails: {
-          minVersion: 'TLSv1'
-        },
-        connectionTimeout: 30000,
-        requestTimeout: 30000,
-        pool: {
-          max: 10,
-          min: 0,
-          idleTimeoutMillis: 30000
-        }
-      }
+    const connectionData = {
+      ...req.body,
+      password
     };
 
-    logger.info('Attempting database connection with config:', {
-      server: config.server,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      options: config.options
+    console.log('Testing connection with config:', {
+      ...connectionData,
+      password: '[REDACTED]'
     });
 
-    pool = await sql.connect(config);
-    logger.info('SQL connection established, testing query');
+    const result = await databaseService.testConnection(connectionData);
     
-    await pool.request().query('SELECT 1 as test');
-    logger.info('Test query successful');
+    console.log('Test connection result:', result);
     
-    res.json({ 
-      success: true, 
-      message: 'Connection successful'
-    });
+    res.json(result);
   } catch (error) {
-    logger.error('Test connection failed:', {
-      error: {
-        message: error.message,
-        code: error.code,
-        state: error.state,
-        stack: error.stack
-      }
+    console.error('Test connection handler error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
-
-    res.status(500).json({ 
-      success: false, 
-      message: 'Connection failed',
-      error: error.message,
-      code: error.code
-    });
-  } finally {
-    if (pool) {
-      try {
-        await sql.close();
-        logger.info('Connection pool closed');
-      } catch (closeError) {
-        logger.error('Error closing connection pool:', closeError);
-      }
-    }
   }
 };
 

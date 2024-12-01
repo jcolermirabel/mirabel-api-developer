@@ -4,22 +4,28 @@ const Service = require('../models/Service');
 const crypto = require('crypto');
 
 const decryptOnce = (encryptedString) => {
-  const [encrypted, iv] = encryptedString.split(':');
-  
-  console.log('Decryption step:', {
-    encryptedLength: encrypted.length,
-    ivLength: iv.length
-  });
+  try {
+    const [encrypted, iv] = encryptedString.split(':');
+    
+    console.log('Decryption attempt:', {
+      encryptedLength: encrypted.length,
+      ivLength: iv.length,
+      hasMoreColons: encrypted.includes(':')
+    });
 
-  const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
-  const ivBuffer = Buffer.from(iv, 'hex');
-  const encryptedBuffer = Buffer.from(encrypted, 'hex');
+    const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+    const ivBuffer = Buffer.from(iv, 'hex');
+    const encryptedBuffer = Buffer.from(encrypted, 'hex');
 
-  const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, ivBuffer);
-  let decrypted = decipher.update(encryptedBuffer);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  
-  return decrypted.toString();
+    const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, ivBuffer);
+    let decrypted = decipher.update(encryptedBuffer);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
+    return decrypted.toString();
+  } catch (error) {
+    console.error('Decryption error:', error);
+    return null;
+  }
 };
 
 async function checkEncryption() {
@@ -33,17 +39,21 @@ async function checkEncryption() {
       return;
     }
 
-    console.log('\nFirst Decryption:');
-    console.log('----------------');
-    const firstPass = decryptOnce(service.password);
-    console.log('Result:', firstPass);
+    let currentValue = service.password;
+    let decryptionCount = 0;
 
-    if (firstPass.includes(':')) {
-      console.log('\nSecond Decryption:');
-      console.log('----------------');
-      const finalPass = decryptOnce(firstPass);
-      console.log('Final result:', finalPass);
+    while (currentValue && currentValue.includes(':')) {
+      decryptionCount++;
+      console.log(`\nDecryption attempt ${decryptionCount}:`);
+      console.log('-'.repeat(20));
+      currentValue = decryptOnce(currentValue);
     }
+
+    console.log('\nFinal result:', {
+      decryptionCount,
+      finalValue: currentValue,
+      stillEncrypted: currentValue?.includes(':') || false
+    });
 
   } catch (error) {
     console.error('Error:', error);

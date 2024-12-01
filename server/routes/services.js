@@ -6,6 +6,19 @@ const { decryptDatabasePassword } = require('../utils/encryption');
 const { logger } = require('../middleware/logger');
 const databaseService = require('../services/databaseService');
 
+// Get all services
+router.get('/', async (req, res, next) => {
+  try {
+    console.log('Fetching all services...');
+    const services = await Service.find();
+    console.log(`Found ${services.length} services`);
+    res.json(services);
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    next(error);
+  }
+});
+
 // Test connection handler with enhanced logging
 const testConnection = async (req, res, next) => {
   try {
@@ -95,6 +108,16 @@ router.use((err, req, res, next) => {
 });
 
 // Route registrations
+router.get('/', async (req, res) => {
+  try {
+    const services = await Service.find();
+    res.json(services);
+  } catch (error) {
+    console.error('Error fetching services:', error);
+    res.status(500).json({ error: 'Failed to fetch services' });
+  }
+});
+
 router.post('/test', testConnection);
 
 module.exports = router;

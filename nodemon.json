@@ -1,0 +1,8 @@
+{
+  "watch": ["server"],
+  "ext": ".js,.json",
+  "ignore": ["server/logs/*", "server/coverage/*", "server/__tests__/*"],
+  "env": {
+    "NODE_ENV": "development"
+  }
+} 

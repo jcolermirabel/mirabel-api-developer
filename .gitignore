@@ -1,0 +1,40 @@
+#Environment files
+.env
+server/.env
+.env.*
+!.env.example
+!server/.env.example
+
+# Dependencies
+node_modules/
+/server/node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+/dist
+
+# Logs
+logs/
+*.log
+server/logs/
+server/logs/combined.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+
+# Large files
+*.exe
+mongosh.exe
+
+# OS files
+.DS_Store
+Thumbs.db

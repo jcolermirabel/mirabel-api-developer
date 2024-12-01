@@ -5,7 +5,6 @@ const helmet = require('helmet');
 const connectDB = require('./config/database');
 const { authMiddleware } = require('./middleware/auth');
 const apiKeyAuth = require('./middleware/apiKeyAuth');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 const servicesRouter = require('./routes/services');
 const documentationRouter = require('./routes/documentation');
 const cookieParser = require('cookie-parser');
@@ -20,29 +19,8 @@ console.log('Environment:', {
 
 const app = express();
 
-// Trust proxy configuration - MUST be first!
-app.set('trust proxy', '*');
-
-// Rate limiting configuration
-const rateLimit = require('express-rate-limit');
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  trustProxy: true,
-  handler: (req, res) => {
-    console.log('Rate limit check:', {
-      ip: req.ip,
-      ips: req.ips,
-      headers: req.headers
-    });
-    res.status(429).json({
-      message: 'Too many requests'
-    });
-  }
-});
-
-// Apply rate limiting to all routes
-app.use(limiter);
+// Trust proxy configuration
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(helmet());

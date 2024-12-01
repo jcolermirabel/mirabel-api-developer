@@ -1,5 +1,19 @@
 require('dotenv').config();
 const express = require('express');
+const app = express();
+
+// Debug environment variables
+console.log('Environment:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  MONGODB_URI: process.env.MONGODB_URI
+});
+
+// Trust proxy configuration - MUST be first, before any middleware
+app.enable('trust proxy');
+app.set('trust proxy', 1);
+
+// Now import and configure middleware
 const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/database');
@@ -9,24 +23,6 @@ const servicesRouter = require('./routes/services');
 const documentationRouter = require('./routes/documentation');
 const cookieParser = require('cookie-parser');
 const persistentAuth = require('./middleware/persistentAuth');
-
-// Debug environment variables
-console.log('Environment:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
-  MONGODB_URI: process.env.MONGODB_URI
-});
-
-const app = express();
-
-// Trust proxy configuration - MUST be first!
-app.set('trust proxy', function(ip) {
-  console.log('Trust proxy check for IP:', ip);
-  return true; // Trust all IPs
-});
-
-// Also enable trust proxy
-app.enable('trust proxy');
 
 // Security middleware
 app.use(helmet());

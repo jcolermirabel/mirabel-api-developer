@@ -1,7 +1,6 @@
 const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
-  // Use host and port directly
   const server = config.host;
   const port = parseInt(config.port);
 
@@ -14,46 +13,21 @@ const getConnectionConfig = (config) => {
   });
 
   const connectionConfig = {
-    server: server,  // Just use the IP address
-    port: port,      // Port should be separate
+    server: server,  // Just the IP
+    port: port,      // Port as a number
     database: config.database,
     user: config.username,
     password: config.password,
     options: {
+      port: port,    // Also specify port in options
       trustServerCertificate: true,
       encrypt: false,
       enableArithAbort: true,
       validateBulkLoadParameters: false,
       connectTimeout: 30000,
-      requestTimeout: 30000,
-      packetSize: 32768,
-      debug: {
-        packet: true,
-        data: true,
-        payload: true,
-        token: true
-      },
-      serverName: config.name,
-      rowCollectionOnRequestCompletion: true,
-      port: port  // Also specify port in options
-    },
-    pool: {
-      max: 10,
-      min: 0,
-      idleTimeoutMillis: 30000,
-      acquireTimeoutMillis: 30000,
-      createTimeoutMillis: 30000,
-      destroyTimeoutMillis: 30000,
-      reapIntervalMillis: 1000,
-      createRetryIntervalMillis: 1000
+      requestTimeout: 30000
     }
   };
-
-  console.log('Connection details:', {
-    server: connectionConfig.server,
-    port: connectionConfig.port,
-    optionsPort: connectionConfig.options.port
-  });
 
   return connectionConfig;
 };

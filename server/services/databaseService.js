@@ -4,6 +4,7 @@ const getConnectionConfig = (config) => {
   const port = parseInt(config.port);
 
   const connectionConfig = {
+    server: config.host,
     authentication: {
       type: 'default',
       options: {
@@ -11,22 +12,28 @@ const getConnectionConfig = (config) => {
         password: config.password
       }
     },
-    server: config.host,
     options: {
       port: port,
       database: config.database,
       trustServerCertificate: true,
       encrypt: false,
       connectTimeout: 30000,
-      requestTimeout: 30000
+      requestTimeout: 30000,
+      rowCollectionOnRequestCompletion: true,
+      useColumnNames: true,
+      debug: {
+        packet: true,
+        data: true,
+        payload: true,
+        token: true
+      }
     }
   };
 
   console.log('Building connection config:', {
     server: connectionConfig.server,
     port: connectionConfig.options.port,
-    database: connectionConfig.options.database,
-    user: connectionConfig.authentication.options.userName
+    database: connectionConfig.options.database
   });
 
   return connectionConfig;
@@ -34,15 +41,19 @@ const getConnectionConfig = (config) => {
 
 const testConnection = async (config) => {
   return new Promise((resolve, reject) => {
+    console.log('\n=== Starting SQL Connection Test ===');
     const connection = new Connection(getConnectionConfig(config));
 
+    connection.on('debug', console.log);
+    
     connection.on('connect', (err) => {
       if (err) {
         console.error('Connection failed:', err);
         connection.close();
         resolve({ 
           success: false, 
-          error: err.message 
+          error: err.message,
+          details: err
         });
         return;
       }

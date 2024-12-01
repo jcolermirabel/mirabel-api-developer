@@ -26,9 +26,6 @@ console.log('Environment settings:', {
 app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 app.enable('trust proxy');
 
-// Also set it explicitly for rate limiter
-app.set('rateLimit.trustProxy', true);
-
 // Security middleware
 app.use(helmet());
 

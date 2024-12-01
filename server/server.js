@@ -16,15 +16,18 @@ console.log('Environment:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
   MONGODB_URI: process.env.MONGODB_URI,
-  TRUST_PROXY: process.env.TRUST_PROXY
+  TRUST_PROXY: process.env.TRUST_PROXY,
+  EXPRESS_TRUST_PROXY: process.env.EXPRESS_TRUST_PROXY,
+  PROXY_LEVEL: process.env.PROXY_LEVEL
 });
 
 const app = express();
 
 // Trust proxy configuration - MUST be first!
-app.enable('trust proxy'); // Enable proxy support
-app.set('trust proxy', true); // Trust first proxy
-app.set('trust proxy', 'loopback, linklocal, uniquelocal'); // Trust specific IPs
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', Number(process.env.PROXY_LEVEL) || 1);
+  app.enable('trust proxy');
+}
 
 // Rate limiting configuration
 const rateLimit = require('express-rate-limit');
@@ -33,7 +36,17 @@ const limiter = rateLimit({
   max: 100,
   trustProxy: true,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    console.log('Rate limit exceeded:', {
+      ip: req.ip,
+      ips: req.ips,
+      headers: req.headers
+    });
+    res.status(429).json({
+      message: 'Too many requests, please try again later.'
+    });
+  }
 });
 
 // Apply rate limiting to all routes

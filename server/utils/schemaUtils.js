@@ -1,8 +1,14 @@
 const { Connection, Request } = require('tedious');
+const sql = require('mssql');
 const { decryptDatabasePassword } = require('./encryption');
 const { logger } = require('../middleware/logger');
 
 async function fetchSchemaFromDatabase(pool, objectName) {
+  console.log('Fetching schema for:', {
+    objectName,
+    poolConfig: pool.config,
+    poolState: pool.connected ? 'connected' : 'disconnected'
+  });
   try {
     // Get procedure metadata
     const procedureInfo = await pool.request()
@@ -18,6 +24,8 @@ async function fetchSchemaFromDatabase(pool, objectName) {
         INNER JOIN sys.sql_modules m ON p.object_id = m.object_id
         WHERE p.name = @objectName
       `);
+
+    console.log('Procedure info result:', procedureInfo);
 
     // Get parameter details
     const paramResult = await pool.request()

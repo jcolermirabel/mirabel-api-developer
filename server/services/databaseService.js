@@ -1,50 +1,49 @@
 const { Connection, Request } = require('tedious');
 
 const getConnectionConfig = (config) => {
-  const port = parseInt(config.port);
-
-  const connectionConfig = {
-    server: config.host,
-    authentication: {
-      type: 'default',
-      options: {
-        userName: config.username,
-        password: config.password
-      }
-    },
-    options: {
-      port: port,
-      database: config.database,
-      trustServerCertificate: true,
-      encrypt: false,
-      connectTimeout: 30000,
-      requestTimeout: 30000,
-      rowCollectionOnRequestCompletion: true,
-      useColumnNames: true,
-      debug: {
-        packet: true,
-        data: true,
-        payload: true,
-        token: true
-      }
-    }
-  };
-
-  console.log('Building connection config:', {
-    server: connectionConfig.server,
-    port: connectionConfig.options.port,
-    database: connectionConfig.options.database
+  console.log('Attempting SQL connection with:', {
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    username: config.username
   });
 
-  return connectionConfig;
+  return {
+    server: config.host,
+    port: parseInt(config.port),
+    database: config.database,
+    user: config.username,
+    password: config.password,
+    options: {
+      encrypt: false,
+      trustServerCertificate: true,
+      enableArithAbort: true,
+      connectTimeout: 30000,
+      requestTimeout: 30000
+    }
+  };
 };
 
 const testConnection = async (config) => {
   return new Promise((resolve, reject) => {
     console.log('\n=== Starting SQL Connection Test ===');
+    console.log('Connection config:', {
+      server: config.host,
+      port: config.port,
+      database: config.database,
+      username: config.username,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    });
+
     const connection = new Connection(getConnectionConfig(config));
 
     connection.on('debug', console.log);
+    connection.on('error', console.error);
+    connection.on('errorMessage', console.error);
+    connection.on('infoMessage', console.log);
     
     connection.on('connect', (err) => {
       if (err) {

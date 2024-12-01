@@ -1,31 +1,29 @@
 const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
-  const server = config.host;
-  const port = parseInt(config.port);
+  const server = `${config.host}:${config.port}`;
 
   console.log('Building SQL config with:', {
     server,
-    port,
     database: config.database,
     username: config.username,
     name: config.name
   });
 
   const connectionConfig = {
-    server: server,  // Just the IP
-    port: port,      // Port as a number
+    server,
     database: config.database,
     user: config.username,
     password: config.password,
     options: {
-      port: port,    // Also specify port in options
       trustServerCertificate: true,
       encrypt: false,
       enableArithAbort: true,
       validateBulkLoadParameters: false,
       connectTimeout: 30000,
-      requestTimeout: 30000
+      requestTimeout: 30000,
+      instanceName: '',
+      port: parseInt(config.port)
     }
   };
 

@@ -18,7 +18,7 @@ const app = express();
 
 // Trust proxy - add these lines before any other middleware
 app.enable('trust proxy');  // Enable trust proxy
-app.set('trust proxy', true);  // Set trust proxy to true
+app.set('trust proxy', 1);  // Trust first proxy
 
 // Security middleware
 app.use(helmet());

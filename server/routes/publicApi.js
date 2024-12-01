@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
 const ApiUsage = require('../models/ApiUsage');
-const sql = require('mssql');
+const { Connection, Request } = require('tedious');
 const { decryptDatabasePassword } = require('../utils/encryption');
 
 // Public API endpoint handler

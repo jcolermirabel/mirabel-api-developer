@@ -2,20 +2,32 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL + '/api';
 
-const getAuthHeaders = () => ({
-  'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-  'X-Mirabel-API': process.env.REACT_APP_API_KEY
-});
+const getAuthHeaders = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  console.log('Current user:', user);
+  
+  return {
+    'Authorization': `Bearer ${user?.token}`,
+    'X-Mirabel-API': process.env.REACT_APP_API_KEY
+  };
+};
 
 export const getUsers = async () => {
   try {
+    console.log('Fetching users...');
     const response = await axios.get(
       `${API_URL}/users`,
-      { headers: getAuthHeaders() }
+      { 
+        headers: getAuthHeaders(),
+        withCredentials: true
+      }
     );
+    console.log('Users response:', response.data);
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch users');
+    console.error('Error fetching users:', error);
+    console.error('Auth headers:', getAuthHeaders());
+    throw error;
   }
 };
 

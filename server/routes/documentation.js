@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Role = require('../models/Role');
-const sql = require('mssql');
+const { Connection, Request } = require('tedious');
 const { decryptDatabasePassword } = require('../utils/encryption');
 const { logger } = require('../middleware/logger');
 const { fetchSchemaFromDatabase } = require('../utils/schemaUtils');

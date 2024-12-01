@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+const mongoose = require('mongoose');
 
 // Debug environment variables
 console.log('Environment:', {
@@ -47,14 +48,30 @@ connectDB().then(() => {
   process.exit(1);
 });
 
+// Add detailed logging for MongoDB connection
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connection details:', {
+    host: mongoose.connection.host,
+    port: mongoose.connection.port,
+    name: mongoose.connection.name
+  });
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', {
+    message: err.message,
+    code: err.code,
+    name: err.name
+  });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/public', apiKeyAuth, require('./routes/publicApi'));
-app.use('/api/services', persistentAuth, servicesRouter);
+app.use('/api/users', persistentAuth, require('./routes/users'));
 app.use('/api/roles', persistentAuth, require('./routes/roles'));
 app.use('/api/applications', persistentAuth, require('./routes/applications'));
+app.use('/api/services', persistentAuth, servicesRouter);
 app.use('/api/reports', persistentAuth, require('./routes/reports'));
-app.use('/api/users', persistentAuth, require('./routes/users'));
 app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
 app.use('/api/documentation', persistentAuth, documentationRouter);
 

@@ -54,4 +54,21 @@ api.interceptors.response.use(
   }
 );
 
-export default api; 
+// API functions
+export const getUsers = async () => {
+  try {
+    const response = await api.get('/api/users');
+    console.log('Users API Response:', response);
+    return response.data;
+  } catch (error) {
+    console.error('Users API Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
+};
+
+// Export both the api instance and named functions
+export { api as default }; 

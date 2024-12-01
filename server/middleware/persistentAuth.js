@@ -1,30 +1,18 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-const persistentAuth = async (req, res, next) => {
+const persistentAuth = (req, res, next) => {
   try {
-    // Check for token in cookies
-    const token = req.cookies.token;
-    
+    const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Get user
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-
-    // Attach user to request
-    req.user = user;
+    req.user = decoded;
     next();
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 };
 

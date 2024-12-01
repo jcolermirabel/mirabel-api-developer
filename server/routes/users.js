@@ -6,10 +6,19 @@ const { authMiddleware } = require('../middleware/auth');
 // Get all users
 router.get('/', async (req, res) => {
   try {
+    console.log('Auth headers:', req.headers);
+    console.log('User from token:', req.user);
+    
+    console.log('Fetching users from MongoDB...');
     const users = await User.find({}, '-password').populate('roles');
+    console.log(`Found ${users.length} users`);
     res.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ message: 'Failed to fetch users' });
   }
 });

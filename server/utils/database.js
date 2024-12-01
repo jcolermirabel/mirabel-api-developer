@@ -1,4 +1,4 @@
-const sql = require('mssql');
+const { Connection, Request } = require('tedious');
 const crypto = require('crypto');
 
 const decryptPassword = (encryptedPassword, iv) => {
@@ -29,18 +29,22 @@ const createConnection = async (service) => {
     }
   };
 
-  const pool = await sql.connect(config);
+  const pool = await new Connection(config);
   return pool;
 };
 
 const executeQuery = async (pool, query, params = []) => {
   try {
-    const request = pool.request();
-    params.forEach((param, index) => {
-      request.input(`param${index}`, param);
+    const request = new Request(query, (err, rowCount, rows) => {
+      if (err) {
+        throw new Error(`Query execution failed: ${err.message}`);
+      }
     });
-    const result = await request.query(query);
-    return result.recordset;
+    params.forEach((param, index) => {
+      request.addParameter(`param${index}`, param);
+    });
+    await pool.exec(request);
+    return rows;
   } catch (error) {
     throw new Error(`Query execution failed: ${error.message}`);
   }

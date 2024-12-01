@@ -20,13 +20,14 @@ import {
   Delete as DeleteIcon,
   Edit as EditIcon
 } from '@mui/icons-material';
-import { getUsers, deleteUser, updateUser } from '../../services/userService';
+import { deleteUser, updateUser } from '../../services/userService';
 import UserForm from './UserForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ConfirmDialog from '../common/ConfirmDialog';
 import ExportMenu from '../common/ExportMenu';
 import { useSelection } from '../../context/SelectionContext';
 import BulkActions from '../common/BulkActions';
+import { getUsers } from '../../services/userService';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -42,8 +43,8 @@ const UserList = () => {
       const data = await getUsers();
       setUsers(data);
       setError('');
-    } catch (err) {
-      setError('Failed to fetch users');
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
     } finally {
       setLoading(false);
     }

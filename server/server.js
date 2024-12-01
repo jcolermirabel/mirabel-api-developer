@@ -15,37 +15,31 @@ const persistentAuthMiddleware = require('./middleware/persistentAuthMiddleware'
 console.log('Environment:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
-  MONGODB_URI: process.env.MONGODB_URI,
-  TRUST_PROXY: process.env.TRUST_PROXY,
-  EXPRESS_TRUST_PROXY: process.env.EXPRESS_TRUST_PROXY,
-  PROXY_LEVEL: process.env.PROXY_LEVEL
+  MONGODB_URI: process.env.MONGODB_URI
 });
 
 const app = express();
 
 // Trust proxy configuration - MUST be first!
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', Number(process.env.PROXY_LEVEL) || 1);
-  app.enable('trust proxy');
-}
+app.set('trust proxy', true);
+app.enable('trust proxy');
 
 // Rate limiting configuration
 const rateLimit = require('express-rate-limit');
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  trustProxy: true,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    console.log('Rate limit exceeded:', {
+  skip: (req) => {
+    // Log request details
+    console.log('Rate limit check:', {
       ip: req.ip,
       ips: req.ips,
-      headers: req.headers
+      headers: {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip']
+      }
     });
-    res.status(429).json({
-      message: 'Too many requests, please try again later.'
-    });
+    return false; // Don't actually skip
   }
 });
 

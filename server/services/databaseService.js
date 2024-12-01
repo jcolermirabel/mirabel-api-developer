@@ -18,8 +18,14 @@ const getConnectionConfig = (config) => {
       encrypt: false,
       trustServerCertificate: true,
       enableArithAbort: true,
-      connectTimeout: 30000,
-      requestTimeout: 30000
+      connectTimeout: 60000,
+      requestTimeout: 60000,
+      packetSize: 4096,
+      debug: {
+        packet: true,
+        data: true,
+        payload: true
+      }
     }
   };
 };

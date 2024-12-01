@@ -5,6 +5,7 @@ const { Connection, Request } = require('tedious');
 const { decryptDatabasePassword } = require('../utils/encryption');
 const { logger } = require('../middleware/logger');
 const databaseService = require('../services/databaseService');
+const sql = require('mssql');
 
 // Get all services
 router.get('/', async (req, res, next) => {
@@ -119,5 +120,42 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/test', testConnection);
+
+// Add this endpoint
+router.get('/:serviceId/objects', async (req, res) => {
+  try {
+    console.log('Fetching objects for service:', req.params.serviceId);
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    // Connect to SQL Server and fetch objects
+    const config = {
+      user: service.username,
+      password: decryptDatabasePassword(service.password),
+      server: service.host,
+      port: parseInt(service.port),
+      database: service.database,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true
+      }
+    };
+
+    const pool = await sql.connect(config);
+    const result = await pool.request().query(`
+      SELECT name, type_desc 
+      FROM sys.objects 
+      WHERE type IN ('P', 'FN', 'IF', 'TF')
+      ORDER BY name
+    `);
+
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('Error fetching objects:', error);
+    res.status(500).json({ message: 'Failed to fetch objects' });
+  }
+});
 
 module.exports = router;

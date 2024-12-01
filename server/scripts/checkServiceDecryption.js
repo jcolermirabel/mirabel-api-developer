@@ -8,12 +8,19 @@ async function checkEncryption() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Get service from MongoDB
-    const service = await Service.findOne({ name: 'salesdemo_staging' });
+    // Get service by ID for testing
+    const service = await Service.findById('674a92748eb6dee851254c10');
     if (!service) {
-      console.error('Service not found');
+      console.error('Test service not found');
       return;
     }
+
+    console.log('\nService Details:');
+    console.log('---------------');
+    console.log('Name:', service.name);
+    console.log('Host:', service.host);
+    console.log('Port:', service.port);
+    console.log('Database:', service.database);
 
     // Log encryption details
     console.log('\nEncryption Environment:');

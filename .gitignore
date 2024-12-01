@@ -4,6 +4,7 @@ server/.env
 .env.*
 !.env.example
 !server/.env.example
+server/.env.production
 
 # Dependencies
 node_modules/

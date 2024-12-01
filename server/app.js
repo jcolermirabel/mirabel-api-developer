@@ -16,9 +16,9 @@ const SERVICES_USING_NEW_AUTH = ['salesdemo_staging'];
 
 const app = express();
 
-// Trust proxy - add these lines before any other middleware
-app.enable('trust proxy');  // Enable trust proxy
-app.set('trust proxy', 1);  // Trust first proxy
+// Trust proxy configuration - must be first!
+app.enable('trust proxy');
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet());

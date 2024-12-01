@@ -6,10 +6,8 @@ const getConnectionConfig = (config) => {
   
   // If instance name is included, handle it appropriately
   if (server.includes('\\')) {
-    // For named instances, keep the format as is
     server = config.host;
   } else {
-    // For IP addresses, use host,port format
     server = `${config.host},${config.port}`;
   }
 
@@ -20,14 +18,18 @@ const getConnectionConfig = (config) => {
     password: config.password,
     options: {
       trustServerCertificate: true,
-      encrypt: false, // Set to false to avoid TLS warning
+      encrypt: false,  // Set to false for internal network
       enableArithAbort: true,
       connectionTimeout: 30000,
-      instanceName: config.instanceName,
+      requestTimeout: 30000,
       port: parseInt(config.port),
       validateBulkLoadParameters: false,
-      cryptoCredentialsDetails: {
-        minVersion: 'TLSv1'
+      debug: {
+        packet: true,
+        data: true,
+        payload: true,
+        token: false,
+        connector: true
       }
     }
   };
@@ -35,20 +37,31 @@ const getConnectionConfig = (config) => {
 
 const testConnection = async (config) => {
   const connectionConfig = getConnectionConfig(config);
-  console.log('Attempting connection with config:', {
+  console.log('Attempting SQL connection with config:', {
     ...connectionConfig,
-    password: '[REDACTED]'
+    password: '[REDACTED]',
+    server: connectionConfig.server,
+    database: connectionConfig.database,
+    options: connectionConfig.options
   });
   
   try {
-    // Create a new connection pool for each test
     const pool = new sql.ConnectionPool(connectionConfig);
     await pool.connect();
-    await pool.request().query('SELECT 1'); // Test query
+    
+    // Test the connection with a simple query
+    const result = await pool.request().query('SELECT 1 as test');
+    console.log('Test query result:', result);
+    
     await pool.close();
     return { success: true };
   } catch (error) {
-    console.error('Connection test failed:', error);
+    console.error('SQL Connection test failed:', {
+      error: error.message,
+      code: error.code,
+      state: error.state,
+      stack: error.stack
+    });
     return { 
       success: false, 
       error: error.message 

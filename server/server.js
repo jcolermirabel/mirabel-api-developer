@@ -15,14 +15,29 @@ const persistentAuthMiddleware = require('./middleware/persistentAuthMiddleware'
 console.log('Environment:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
-  MONGODB_URI: process.env.MONGODB_URI
+  MONGODB_URI: process.env.MONGODB_URI,
+  TRUST_PROXY: process.env.TRUST_PROXY
 });
 
 const app = express();
 
 // Trust proxy configuration - MUST be first!
-app.set('trust proxy', 'loopback, linklocal, uniquelocal');
-app.enable('trust proxy');
+app.enable('trust proxy'); // Enable proxy support
+app.set('trust proxy', true); // Trust first proxy
+app.set('trust proxy', 'loopback, linklocal, uniquelocal'); // Trust specific IPs
+
+// Rate limiting configuration
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  trustProxy: true,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
 
 // Security middleware
 app.use(helmet());
@@ -46,10 +61,6 @@ connectDB().then(() => {
   console.error('MongoDB connection error:', err);
   process.exit(1);
 });
-
-// Rate limiting
-app.use('/api/auth', authLimiter);
-app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

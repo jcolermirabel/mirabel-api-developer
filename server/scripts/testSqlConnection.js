@@ -3,37 +3,41 @@ const mongoose = require('mongoose');
 const Service = require('../models/Service');
 const crypto = require('crypto');
 
-// Add decryption function directly in script
-const decryptPassword = (encryptedPassword) => {
+const decryptPassword = (encryptedString) => {
   try {
-    const [password, iv] = encryptedPassword.split(':');
-    
-    console.log('Decryption details:', {
-      encryptionKey: process.env.ENCRYPTION_KEY,
-      encryptionKeyLength: process.env.ENCRYPTION_KEY?.length,
-      passwordLength: password?.length,
-      ivLength: iv?.length
+    // Split the encrypted string into password and IV
+    const lastColon = encryptedString.lastIndexOf(':');
+    const encryptedPassword = encryptedString.slice(0, lastColon);
+    const iv = encryptedString.slice(lastColon + 1);
+
+    console.log('Decryption components:', {
+      encryptedLength: encryptedString.length,
+      passwordPart: encryptedPassword.length,
+      ivPart: iv.length,
+      key: process.env.ENCRYPTION_KEY
     });
 
-    if (!process.env.ENCRYPTION_KEY) {
-      throw new Error('ENCRYPTION_KEY not found in environment');
-    }
-
+    // Create buffers
     const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
     const ivBuffer = Buffer.from(iv, 'hex');
-    
-    console.log('Buffer lengths:', {
-      keyBuffer: keyBuffer.length,
-      ivBuffer: ivBuffer.length
+    const encryptedBuffer = Buffer.from(encryptedPassword, 'hex');
+
+    console.log('Buffer sizes:', {
+      key: keyBuffer.length,
+      iv: ivBuffer.length,
+      encrypted: encryptedBuffer.length
     });
 
+    // Create decipher
     const decipher = crypto.createDecipheriv('aes-256-cbc', keyBuffer, ivBuffer);
-    let decrypted = decipher.update(Buffer.from(password, 'hex'));
+    
+    // Decrypt
+    let decrypted = decipher.update(encryptedBuffer);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     
     return decrypted.toString();
   } catch (error) {
-    console.error('Decryption error:', error);
+    console.error('Decryption failed:', error);
     throw error;
   }
 };

@@ -17,6 +17,14 @@ console.log('Environment:', {
   MONGODB_URI: process.env.MONGODB_URI
 });
 
+console.log('Proxy Settings:', {
+  NODE_ENV: process.env.NODE_ENV,
+  TRUST_PROXY: process.env.TRUST_PROXY,
+  EXPRESS_TRUST_PROXY: process.env.EXPRESS_TRUST_PROXY,
+  PROXY_LEVEL: process.env.PROXY_LEVEL,
+  'app.get("trust proxy")': app.get('trust proxy')
+});
+
 const app = express();
 
 // Trust proxy configuration

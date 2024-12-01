@@ -1,14 +1,20 @@
 const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
-  const connectionString = `mssql://${config.username}:${config.password}@${config.host}:${config.port}/${config.database}`;
+  const port = parseInt(config.port);
+  const server = `${config.host},${port}`;  // Use comma format for server
 
-  console.log('Connection string (redacted):', 
-    connectionString.replace(config.password, '[REDACTED]')
-  );
+  console.log('Building connection config:', {
+    server,
+    database: config.database,
+    user: config.username
+  });
 
   return {
-    connectionString,
+    server,  // host,port format
+    database: config.database,
+    user: config.username,
+    password: config.password,
     options: {
       trustServerCertificate: true,
       encrypt: false,

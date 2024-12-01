@@ -1,18 +1,26 @@
 const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
-  const connectionString = `Server=${config.host},${config.port};Database=${config.database};User Id=${config.username};Password=${config.password};Encrypt=false;TrustServerCertificate=true;`;
+  const port = parseInt(config.port);
 
-  console.log('Connection string (password redacted):', 
-    connectionString.replace(config.password, '[REDACTED]')
-  );
+  console.log('Building SQL config with:', {
+    server: config.host,
+    port,
+    database: config.database,
+    username: config.username
+  });
 
   return {
-    connectionString,
+    server: config.host,
+    port,
+    database: config.database,
+    user: config.username,
+    password: config.password,
     options: {
-      enableArithAbort: true,
       trustServerCertificate: true,
       encrypt: false,
+      enableArithAbort: true,
+      port,  // Specify port in options too
       connectTimeout: 30000,
       requestTimeout: 30000
     }
@@ -24,6 +32,11 @@ const testConnection = async (config) => {
   try {
     console.log('\n=== Starting SQL Connection Test ===');
     const connectionConfig = getConnectionConfig(config);
+    
+    console.log('Connecting with config:', {
+      ...connectionConfig,
+      password: '[REDACTED]'
+    });
     
     pool = await sql.connect(connectionConfig);
     const result = await pool.request().query('SELECT 1 as test');

@@ -6,6 +6,17 @@ const apiLimiter = rateLimit({
   trustProxy: true,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    console.log('Rate limit check:', {
+      ip: req.ip,
+      path: req.path,
+      headers: {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip']
+      }
+    });
+    return false;
+  },
   handler: (req, res) => {
     console.log('Rate limit exceeded:', {
       ip: req.ip,
@@ -24,6 +35,17 @@ const authLimiter = rateLimit({
   trustProxy: true,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    console.log('Auth rate limit check:', {
+      ip: req.ip,
+      path: req.path,
+      headers: {
+        'x-forwarded-for': req.headers['x-forwarded-for'],
+        'x-real-ip': req.headers['x-real-ip']
+      }
+    });
+    return false;
+  },
   handler: (req, res) => {
     console.log('Auth rate limit exceeded:', {
       ip: req.ip,

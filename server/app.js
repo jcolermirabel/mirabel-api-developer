@@ -16,9 +16,12 @@ const SERVICES_USING_NEW_AUTH = ['salesdemo_staging'];
 
 const app = express();
 
-// Trust proxy configuration - must be first!
+// Trust proxy configuration - MUST be before any other middleware
+app.set('trust proxy', true);
 app.enable('trust proxy');
-app.set('trust proxy', 1);
+
+// Also set it explicitly for rate limiter
+app.set('rateLimit.trustProxy', true);
 
 // Security middleware
 app.use(helmet());

@@ -16,13 +16,17 @@ const getConnectionConfig = (config) => {
       connectTimeout: 30000,
       requestTimeout: 30000,
       instanceName: '',
-      useUTC: true
+      useUTC: true,
+      packetSize: 32768,
+      tdsVersion: '7_4'
     },
     pool: {
       min: 0,
       max: 1,
       idleTimeoutMillis: 30000
-    }
+    },
+    stream: false,
+    parseJSON: true
   };
 };
 

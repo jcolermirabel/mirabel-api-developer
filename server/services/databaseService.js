@@ -13,9 +13,19 @@ const getConnectionConfig = (config) => {
     name: config.name
   });
 
+  // Try different server name formats
+  const serverFormats = [
+    server,                    // Just IP
+    `${server},${port}`,      // IP,port
+    `${server}:${port}`,      // IP:port
+    `tcp:${server},${port}`,  // tcp:IP,port
+    `tcp:${server}:${port}`   // tcp:IP:port
+  ];
+
+  console.log('Testing server formats:', serverFormats);
+
   const connectionConfig = {
-    server,
-    port,
+    server: serverFormats[1], // Try IP,port format first
     database: config.database,
     user: config.username,
     password: config.password,
@@ -47,14 +57,6 @@ const getConnectionConfig = (config) => {
       createRetryIntervalMillis: 1000
     }
   };
-
-  // Try both formats for server name
-  if (port) {
-    console.log('Testing connection string formats:');
-    console.log(`1. ${server},${port}`);
-    console.log(`2. ${server}:${port}`);
-    console.log(`3. ${server} port ${port}`);
-  }
 
   return connectionConfig;
 };

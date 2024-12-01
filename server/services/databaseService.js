@@ -1,55 +1,59 @@
-const sql = require('mssql');
+const { Connection, Request } = require('tedious');
 
 const getConnectionConfig = (config) => {
   const port = parseInt(config.port);
 
-  console.log('Building connection config:', {
+  const connectionConfig = {
+    authentication: {
+      type: 'default',
+      options: {
+        userName: config.username,
+        password: config.password
+      }
+    },
     server: config.host,
-    port,
-    database: config.database,
-    user: config.username
-  });
-
-  return {
-    server: config.host,  // Just the IP
-    database: config.database,
-    user: config.username,
-    password: config.password,
-    port: port,          // Port at root level
     options: {
+      port: port,
+      database: config.database,
       trustServerCertificate: true,
       encrypt: false,
-      enableArithAbort: true,
       connectTimeout: 30000,
-      requestTimeout: 30000,
-      tdsVersion: '7_4',
-      port: port,        // Port in options too
-      instanceName: ''   // Empty instance name
+      requestTimeout: 30000
     }
   };
+
+  console.log('Building connection config:', {
+    server: connectionConfig.server,
+    port: connectionConfig.options.port,
+    database: connectionConfig.options.database,
+    user: connectionConfig.authentication.options.userName
+  });
+
+  return connectionConfig;
 };
 
 const testConnection = async (config) => {
-  let pool;
-  try {
-    console.log('\n=== Starting SQL Connection Test ===');
-    const connectionConfig = getConnectionConfig(config);
-    
-    pool = await sql.connect(connectionConfig);
-    const result = await pool.request().query('SELECT 1 as test');
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Connection failed:', error);
-    return { 
-      success: false, 
-      error: error.message 
-    };
-  } finally {
-    if (pool) {
-      await pool.close();
-    }
-  }
+  return new Promise((resolve, reject) => {
+    const connection = new Connection(getConnectionConfig(config));
+
+    connection.on('connect', (err) => {
+      if (err) {
+        console.error('Connection failed:', err);
+        connection.close();
+        resolve({ 
+          success: false, 
+          error: err.message 
+        });
+        return;
+      }
+
+      console.log('Connected successfully');
+      connection.close();
+      resolve({ success: true });
+    });
+
+    connection.connect();
+  });
 };
 
 module.exports = {

@@ -117,7 +117,13 @@ router.get('/:serviceId/objects', async (req, res) => {
     console.log('Headers:', req.headers);
 
     const service = await Service.findById(req.params.serviceId);
+    if (!service) {
+      console.error('Service not found:', req.params.serviceId);
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
     console.log('Found service:', {
+      id: service._id,
       name: service.name,
       host: service.host,
       port: service.port,
@@ -173,7 +179,11 @@ router.get('/:serviceId/objects', async (req, res) => {
     
     res.json(objects.recordset || []);
   } catch (error) {
-    console.error('Error fetching objects:', error);
+    console.error('Error in objects endpoint:', {
+      error: error.message,
+      stack: error.stack,
+      serviceId: req.params.serviceId
+    });
     res.status(500).json({ message: 'Failed to fetch objects' });
   } finally {
     if (pool) await pool.close();

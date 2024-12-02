@@ -190,43 +190,42 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
 
   const handlePermissionChange = async (id, field, value) => {
     if (field === 'service') {
-      console.log('Selected service:', {
-        id: value,
-        field,
-        permissionId: id
+      console.log('Service selected:', {
+        serviceId: value,
+        existingComponents: serviceComponents[value],
+        allComponents: serviceComponents
       });
+
       if (!serviceComponents[value]) {
         try {
           setIsLoadingComponents(true);
-          console.log('Fetching components for service:', value);
           const data = await getDatabaseObjects(value);
-          console.log('Raw data from getDatabaseObjects:', data);
-          
-          if (!data) {
-            console.warn('No data received from getDatabaseObjects');
-            setError('No components found');
+          console.log('Raw data from server:', data);
+
+          // Verify data structure
+          if (!Array.isArray(data)) {
+            console.error('Server returned non-array data:', data);
+            setError('Invalid data format received');
             return;
           }
 
           const sortedComponents = sortAndGroupComponents(data);
-          console.log('Sorted components:', sortedComponents);
-          
-          if (!sortedComponents.tables || !sortedComponents.views || !sortedComponents.procedures) {
-            console.error('Invalid component structure:', sortedComponents);
-            setError('Invalid component data received');
-            return;
-          }
-          
+          console.log('Processed components:', sortedComponents);
+
           setServiceComponents(prev => {
             const updated = {
               ...prev,
               [value]: sortedComponents
             };
-            console.log('Updated serviceComponents:', updated);
+            console.log('Updated service components:', updated);
             return updated;
           });
         } catch (err) {
-          console.error('Error fetching components:', err);
+          console.error('Component fetch error:', {
+            error: err,
+            serviceId: value,
+            message: err.message
+          });
           setError('Failed to fetch components');
         } finally {
           setIsLoadingComponents(false);

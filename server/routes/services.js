@@ -46,13 +46,6 @@ const testConnection = async (req, res, next) => {
     if (password.includes(':')) {
       try {
         console.log('Attempting to decrypt password...');
-        console.log('Password format:', {
-          length: password.length,
-          containsColon: password.includes(':'),
-          firstColon: password.indexOf(':'),
-          lastColon: password.lastIndexOf(':')
-        });
-        
         password = decryptDatabasePassword(password);
         console.log('Password decrypted successfully');
       } catch (decryptError) {
@@ -69,13 +62,14 @@ const testConnection = async (req, res, next) => {
       password
     };
 
-    console.log('Testing connection with config:', {
-      ...connectionData,
-      password: '[REDACTED]'
+    console.log('Testing connection with:', {
+      host: connectionData.host,
+      port: connectionData.port,
+      database: connectionData.database,
+      username: connectionData.username
     });
 
     const result = await databaseService.testConnection(connectionData);
-    console.log('Test connection result:', result);
     
     if (!result.success) {
       console.error('Connection test failed:', result.error);
@@ -84,13 +78,7 @@ const testConnection = async (req, res, next) => {
     
     res.json(result);
   } catch (error) {
-    console.error('Test connection handler error:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      state: error.state
-    });
-    
+    console.error('Test connection handler error:', error);
     next(error);
   }
 };

@@ -27,43 +27,35 @@ import { getDatabaseObjects } from '../../services/roleService';
 const STEPS = ['Basic Information', 'Service Access'];
 
 const sortAndGroupComponents = (data) => {
-  console.log('sortAndGroupComponents input:', data);
+  console.log('Raw data received:', data); // Add this debug log
   
-  if (!data) {
-    console.log('No data provided, returning empty arrays');
-    return { tables: [], views: [], procedures: [] };
-  }
-  
-  // If data is already in the right format, return it
-  if (data.tables && data.views && data.procedures) {
-    console.log('Data already grouped, returning as is');
-    return data;
-  }
-
-  // Ensure data is an array and has name property before sorting
-  if (!Array.isArray(data) || !data.length || !data[0]?.name) {
-    console.log('Invalid data format, returning empty arrays');
-    return { tables: [], views: [], procedures: [] };
+  if (!data || !Array.isArray(data)) {
+    console.log('Invalid data format, returning empty structure');
+    return {
+      tables: [],
+      views: [],
+      procedures: []
+    };
   }
 
   // Group and sort the data
-  const grouped = {
+  return {
     tables: data
-      .filter(o => o?.type === 'U')
+      .filter(o => o && o.type === 'U')
       .map(o => o.name)
-      .sort((a, b) => a?.localeCompare(b) || 0),
+      .filter(Boolean)
+      .sort(),
     views: data
-      .filter(o => o?.type === 'V')
+      .filter(o => o && o.type === 'V')
       .map(o => o.name)
-      .sort((a, b) => a?.localeCompare(b) || 0),
+      .filter(Boolean)
+      .sort(),
     procedures: data
-      .filter(o => ['P', 'FN', 'IF', 'TF'].includes(o?.type))
+      .filter(o => o && ['P', 'FN', 'IF', 'TF'].includes(o.type))
       .map(o => o.name)
-      .sort((a, b) => a?.localeCompare(b) || 0)
+      .filter(Boolean)
+      .sort()
   };
-
-  console.log('Grouped components:', grouped);
-  return grouped;
 };
 
 const CreateRole = ({ mode = 'create', existingRole = null }) => {
@@ -195,20 +187,18 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
         try {
           setIsLoadingComponents(true);
           const data = await getDatabaseObjects(value);
-          console.log('Received database objects:', data);
+          console.log('Raw database objects received:', data);
           
-          if (data && typeof data === 'object') {
-            setServiceComponents(prev => ({
-              ...prev,
-              [value]: data
-            }));
-          } else {
-            console.error('Invalid data format:', data);
-            setError('Invalid data format received');
-          }
+          const sortedComponents = sortAndGroupComponents(data);
+          console.log('Sorted components:', sortedComponents);
+          
+          setServiceComponents(prev => ({
+            ...prev,
+            [value]: sortedComponents
+          }));
         } catch (err) {
           console.error('Error fetching components:', err);
-          setError('Failed to fetch components');
+          setError('Failed to fetch components: ' + err.message);
         } finally {
           setIsLoadingComponents(false);
         }
@@ -227,7 +217,7 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
       });
       return updated;
     });
-  };
+   };
 
   const handleSubmit = async () => {
     try {

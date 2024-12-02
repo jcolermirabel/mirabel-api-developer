@@ -112,6 +112,10 @@ router.post('/test', testConnection);
 router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
+    console.log('\n=== Fetching Objects for Service ===');
+    console.log('ServiceID:', req.params.serviceId);
+    console.log('Headers:', req.headers);
+
     const service = await Service.findById(req.params.serviceId);
     console.log('Found service:', {
       name: service.name,

@@ -46,17 +46,20 @@ const sortAndGroupComponents = (data) => {
     return { tables: [], views: [], procedures: [] };
   }
 
-  // Otherwise, sort the raw SQL data
-  const sortByName = (a, b) => {
-    if (!a?.name || !b?.name) return 0;
-    return a.name.localeCompare(b.name);
-  };
-
+  // Group and sort the data
   const grouped = {
-    tables: data.filter(o => o?.type === 'U').map(o => o.name).sort(),
-    views: data.filter(o => o?.type === 'V').map(o => o.name).sort(),
-    procedures: data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o?.type))
-      .map(o => o.name).sort()
+    tables: data
+      .filter(o => o?.type === 'U')
+      .map(o => o.name)
+      .sort((a, b) => a?.localeCompare(b) || 0),
+    views: data
+      .filter(o => o?.type === 'V')
+      .map(o => o.name)
+      .sort((a, b) => a?.localeCompare(b) || 0),
+    procedures: data
+      .filter(o => ['P', 'FN', 'IF', 'TF'].includes(o?.type))
+      .map(o => o.name)
+      .sort((a, b) => a?.localeCompare(b) || 0)
   };
 
   console.log('Grouped components:', grouped);
@@ -208,6 +211,12 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
           const sortedComponents = sortAndGroupComponents(data);
           console.log('Sorted components:', sortedComponents);
           
+          if (!sortedComponents.tables || !sortedComponents.views || !sortedComponents.procedures) {
+            console.error('Invalid component structure:', sortedComponents);
+            setError('Invalid component data received');
+            return;
+          }
+          
           setServiceComponents(prev => {
             const updated = {
               ...prev,
@@ -341,46 +350,42 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        fullWidth
-                        value={permission.component || ''}
-                        onChange={(e) => handlePermissionChange(permission.id, 'component', e.target.value)}
-                        disabled={!permission.service || isLoadingComponents}
-                        size="small"
-                      >
-                        <MenuItem value="">Select a component</MenuItem>
-                        {permission.component && (
-                          <MenuItem value={permission.component}>
-                            {permission.component}
-                          </MenuItem>
-                        )}
-                        {permission.service && serviceComponents[permission.service] && !isLoadingComponents && [
-                          <ListSubheader key="proc-header">Stored Procedures</ListSubheader>,
-                          ...serviceComponents[permission.service]
-                            .filter(c => c.type === 'procedures')
-                            .map(component => (
-                              <MenuItem key={component.name} value={component.name}>
-                                {component.name}
+                      {permission.service && serviceComponents[permission.service] && (
+                        <Select
+                          fullWidth
+                          value={permission.component || ''}
+                          onChange={(e) => handlePermissionChange(permission.id, 'component', e.target.value)}
+                          disabled={!permission.service || isLoadingComponents}
+                          size="small"
+                        >
+                          <MenuItem value="">Select a component</MenuItem>
+                          {permission.component && (
+                            <MenuItem value={permission.component}>
+                              {permission.component}
+                            </MenuItem>
+                          )}
+                          {permission.service && serviceComponents[permission.service] && [
+                            <ListSubheader key="proc-header">Stored Procedures</ListSubheader>,
+                            ...serviceComponents[permission.service].procedures.map(name => (
+                              <MenuItem key={`proc-${name}`} value={name}>
+                                {name}
                               </MenuItem>
                             )),
-                          <ListSubheader key="tables-header">Tables</ListSubheader>,
-                          ...serviceComponents[permission.service]
-                            .filter(c => c.type === 'tables')
-                            .map(component => (
-                              <MenuItem key={component.name} value={component.name}>
-                                {component.name}
+                            <ListSubheader key="tables-header">Tables</ListSubheader>,
+                            ...serviceComponents[permission.service].tables.map(name => (
+                              <MenuItem key={`table-${name}`} value={name}>
+                                {name}
                               </MenuItem>
                             )),
-                          <ListSubheader key="views-header">Views</ListSubheader>,
-                          ...serviceComponents[permission.service]
-                            .filter(c => c.type === 'views')
-                            .map(component => (
-                              <MenuItem key={component.name} value={component.name}>
-                                {component.name}
+                            <ListSubheader key="views-header">Views</ListSubheader>,
+                            ...serviceComponents[permission.service].views.map(name => (
+                              <MenuItem key={`view-${name}`} value={name}>
+                                {name}
                               </MenuItem>
                             ))
-                        ]}
-                      </Select>
+                          ]}
+                        </Select>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select

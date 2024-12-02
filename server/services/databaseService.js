@@ -23,20 +23,36 @@ const testConnection = async (config) => {
     });
 
     pool = await sql.connect(connectionConfig);
-    const result = await pool.request().query('SELECT 1 as test');
+    console.log('SQL connection established, testing query...');
     
-    return { success: true };
+    const result = await pool.request().query('SELECT 1 as test');
+    console.log('Query result:', result.recordset);
+    
+    return { 
+      success: true,
+      message: 'Connection and query successful'
+    };
   } catch (error) {
     console.error('Connection failed:', {
       message: error.message,
       code: error.code,
       state: error.state,
-      user: config.username
+      user: config.username,
+      stack: error.stack
     });
-    return { success: false, error: error.message };
+    return { 
+      success: false, 
+      error: error.message,
+      details: error
+    };
   } finally {
     if (pool) {
-      await pool.close();
+      try {
+        await pool.close();
+        console.log('Connection closed');
+      } catch (closeError) {
+        console.error('Error closing connection:', closeError);
+      }
     }
   }
 };

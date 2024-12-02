@@ -113,51 +113,44 @@ router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
     console.log('\n=== Fetching Objects for Service ===');
-    console.log('ServiceID:', req.params.serviceId);
-    console.log('Headers:', req.headers);
-
+    
+    // Get service from MongoDB
     const service = await Service.findById(req.params.serviceId);
     if (!service) {
       console.error('Service not found:', req.params.serviceId);
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    console.log('Found service:', {
+    console.log('MongoDB Service Details:', {
       id: service._id,
       name: service.name,
       host: service.host,
       port: service.port,
-      database: service.database
+      database: service.database,
+      username: service.username
     });
-    
-    // This is the SQL connection part that needs to match the working test connection
-    const connectionData = {
-      username: service.username,
-      password: decryptDatabasePassword(service.password),
-      host: service.host,
-      port: service.port,
-      database: service.database
-    };
 
-    // Use the same approach that works in test connection
-    const result = await databaseService.testConnection(connectionData);
-    if (!result.success) {
-      return res.status(500).json({ message: 'Failed to connect to database' });
-    }
-
-    // Now get the objects using the working connection
-    pool = await sql.connect({
-      user: connectionData.username,
-      password: connectionData.password,
-      server: connectionData.host,
-      port: parseInt(connectionData.port),
-      database: connectionData.database,
+    // Decrypt and prepare connection
+    const decryptedPassword = decryptDatabasePassword(service.password);
+    const connectionConfig = {
+      user: service.username,
+      password: decryptedPassword,
+      server: service.host,
+      port: parseInt(service.port),
+      database: service.database,
       options: {
         encrypt: false,
         trustServerCertificate: true
       }
+    };
+
+    console.log('SQL Connection Config:', {
+      ...connectionConfig,
+      password: '[REDACTED]'
     });
 
+    // Connect and query
+    pool = await sql.connect(connectionConfig);
     const objects = await pool.request().query(`
       SELECT 
         o.name,
@@ -172,27 +165,20 @@ router.get('/:serviceId/objects', async (req, res) => {
       ORDER BY o.type_desc, o.name;
     `);
 
-    console.log('\nSQL Query Results:', {
+    console.log('Query Results:', {
       total: objects.recordset.length,
-      types: [...new Set(objects.recordset.map(o => o.type_desc))],
-      counts: {
+      byType: {
         tables: objects.recordset.filter(o => o.type === 'U').length,
         views: objects.recordset.filter(o => o.type === 'V').length,
         procedures: objects.recordset.filter(o => o.type === 'P').length
-      },
-      sample: {
-        tables: objects.recordset.filter(o => o.type === 'U').slice(0, 2),
-        views: objects.recordset.filter(o => o.type === 'V').slice(0, 2),
-        procedures: objects.recordset.filter(o => o.type === 'P').slice(0, 2)
       }
     });
-    
+
     res.json(objects.recordset || []);
   } catch (error) {
-    console.error('Error in objects endpoint:', {
-      error: error.message,
-      stack: error.stack,
-      serviceId: req.params.serviceId
+    console.error('Error:', {
+      message: error.message,
+      stack: error.stack
     });
     res.status(500).json({ message: 'Failed to fetch objects' });
   } finally {

@@ -1,4 +1,5 @@
 const { Connection, Request } = require('tedious');
+const sql = require('mssql');
 
 const getConnectionConfig = (config) => {
   console.log('Attempting SQL connection with:', {
@@ -47,17 +48,29 @@ const testConnection = async (config) => {
       }
     };
 
-    console.log('Testing connection with:', {
+    console.log('\n=== Testing SQL Connection ===');
+    console.log('Connection config:', {
       ...connectionConfig,
       password: '[REDACTED]'
     });
 
+    console.log('Attempting to connect...');
     const pool = await sql.connect(connectionConfig);
+    
+    console.log('Connection established, testing query...');
     const result = await pool.request().query('SELECT 1 as test');
+    console.log('Query result:', result);
+    
+    console.log('Closing connection...');
     await pool.close();
+    
     return { success: true };
   } catch (error) {
-    console.error('Connection failed:', error);
+    console.error('Connection failed:', {
+      message: error.message,
+      code: error.code,
+      state: error.state
+    });
     return { success: false, error: error.message };
   }
 };

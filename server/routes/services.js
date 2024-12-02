@@ -113,6 +113,12 @@ router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
     const service = await Service.findById(req.params.serviceId);
+    console.log('Found service:', {
+      name: service.name,
+      host: service.host,
+      port: service.port,
+      database: service.database
+    });
     
     // This is the SQL connection part that needs to match the working test connection
     const connectionData = {
@@ -149,6 +155,9 @@ router.get('/:serviceId/objects', async (req, res) => {
       ORDER BY type_desc, name
     `);
 
+    console.log('Found objects:', objects.recordset.length);
+    console.log('Sample objects:', objects.recordset.slice(0, 3));
+    
     res.json(objects.recordset || []);
   } catch (error) {
     console.error('Error fetching objects:', error);

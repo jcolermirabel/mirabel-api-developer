@@ -72,7 +72,26 @@ export const getDatabaseObjects = async (serviceId) => {
     const response = await axios.get(`${API_URL}/services/${serviceId}/objects`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    
+    console.log('Raw SQL objects:', response.data);
+    
+    // Transform the data into tables, views, procedures
+    const objects = response.data || [];
+    const grouped = {
+      tables: objects
+        .filter(o => o.type_desc === 'USER_TABLE')
+        .map(o => o.name),
+      views: objects
+        .filter(o => o.type_desc === 'VIEW')
+        .map(o => o.name),
+      procedures: objects
+        .filter(o => o.type_desc.includes('PROCEDURE') || 
+                    o.type_desc.includes('FUNCTION'))
+        .map(o => o.name)
+    };
+    
+    console.log('Grouped objects:', grouped);
+    return grouped;
   } catch (error) {
     console.error('Error in getDatabaseObjects:', error);
     if (error.response?.status === 500) {

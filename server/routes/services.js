@@ -112,16 +112,9 @@ router.post('/test', testConnection);
 router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
-    console.log('\n=== Fetching Database Objects ===');
-    console.log('Service ID:', req.params.serviceId);
-    
     const service = await Service.findById(req.params.serviceId);
-    if (!service) {
-      console.error('Service not found');
-      return res.status(404).json({ message: 'Service not found' });
-    }
-
-    // Use the same connection approach that worked in test connection
+    
+    // This is the SQL connection part that needs to match the working test connection
     const connectionData = {
       username: service.username,
       password: decryptDatabasePassword(service.password),
@@ -130,13 +123,13 @@ router.get('/:serviceId/objects', async (req, res) => {
       database: service.database
     };
 
+    // Use the same approach that works in test connection
     const result = await databaseService.testConnection(connectionData);
     if (!result.success) {
-      console.error('Connection failed:', result.error);
       return res.status(500).json({ message: 'Failed to connect to database' });
     }
 
-    // Now that we know connection works, get the objects
+    // Now get the objects using the working connection
     pool = await sql.connect({
       user: connectionData.username,
       password: connectionData.password,
@@ -156,25 +149,12 @@ router.get('/:serviceId/objects', async (req, res) => {
       ORDER BY type_desc, name
     `);
 
-    console.log(`Found ${objects.recordset.length} objects`);
-    res.json(objects.recordset || []);  // Return empty array if no results
-
+    res.json(objects.recordset || []);
   } catch (error) {
-    console.error('Error fetching objects:', {
-      message: error.message,
-      code: error.code,
-      state: error.state
-    });
+    console.error('Error fetching objects:', error);
     res.status(500).json({ message: 'Failed to fetch objects' });
   } finally {
-    if (pool) {
-      try {
-        await pool.close();
-        console.log('SQL connection closed');
-      } catch (closeError) {
-        console.error('Error closing connection:', closeError);
-      }
-    }
+    if (pool) await pool.close();
   }
 });
 

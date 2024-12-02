@@ -113,11 +113,7 @@ router.get('/:serviceId/objects', async (req, res) => {
   try {
     console.log('Fetching objects for service:', req.params.serviceId);
     const service = await Service.findById(req.params.serviceId);
-    if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
-    }
-
-    // Connect to SQL Server and fetch objects
+    
     const config = {
       user: service.username,
       password: decryptDatabasePassword(service.password),
@@ -134,8 +130,8 @@ router.get('/:serviceId/objects', async (req, res) => {
     const result = await pool.request().query(`
       SELECT name, type_desc 
       FROM sys.objects 
-      WHERE type IN ('P', 'FN', 'IF', 'TF')
-      ORDER BY name
+      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')  // Added V for views, U for tables
+      ORDER BY type_desc, name
     `);
 
     res.json(result.recordset);

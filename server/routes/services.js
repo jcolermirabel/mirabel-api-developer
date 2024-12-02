@@ -166,15 +166,25 @@ router.get('/:serviceId/objects', async (req, res) => {
         s.name as schema_name
       FROM sys.objects o
       JOIN sys.schemas s ON o.schema_id = s.schema_id
-      WHERE o.type IN ('U', 'V', 'P', 'FN', 'IF', 'TF')
+      WHERE o.type IN ('U', 'V', 'P')
         AND o.is_ms_shipped = 0
+        AND s.name = 'dbo'
       ORDER BY o.type_desc, o.name;
     `);
 
-    console.log('SQL Query Results:', {
+    console.log('\nSQL Query Results:', {
       total: objects.recordset.length,
       types: [...new Set(objects.recordset.map(o => o.type_desc))],
-      sample: objects.recordset.slice(0, 3)
+      counts: {
+        tables: objects.recordset.filter(o => o.type === 'U').length,
+        views: objects.recordset.filter(o => o.type === 'V').length,
+        procedures: objects.recordset.filter(o => o.type === 'P').length
+      },
+      sample: {
+        tables: objects.recordset.filter(o => o.type === 'U').slice(0, 2),
+        views: objects.recordset.filter(o => o.type === 'V').slice(0, 2),
+        procedures: objects.recordset.filter(o => o.type === 'P').slice(0, 2)
+      }
     });
     
     res.json(objects.recordset || []);

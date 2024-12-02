@@ -74,23 +74,20 @@ export const getDatabaseObjects = async (serviceId) => {
       headers: getAuthHeaders()
     });
     
-    console.log('Raw response:', response);
-    console.log('Response data:', response.data);
+    console.log('Raw response:', response.data);
 
-    // Ensure we return an array
-    if (!response.data) {
-      console.warn('No data received from server');
-      return [];
-    }
+    // Transform the data into the expected format
+    const objects = response.data || [];
+    const grouped = {
+      tables: objects.filter(o => o.type === 'U').map(o => o.name),
+      views: objects.filter(o => o.type === 'V').map(o => o.name),
+      procedures: objects.filter(o => o.type === 'P').map(o => o.name)
+    };
 
-    return response.data;
+    console.log('Grouped objects:', grouped);
+    return grouped;
   } catch (error) {
-    console.error('Error in getDatabaseObjects:', {
-      error,
-      response: error.response,
-      status: error.response?.status,
-      data: error.response?.data
-    });
+    console.error('Error in getDatabaseObjects:', error);
     throw error;
   }
 }; 

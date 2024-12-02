@@ -190,42 +190,23 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
 
   const handlePermissionChange = async (id, field, value) => {
     if (field === 'service') {
-      console.log('Service selected:', {
-        serviceId: value,
-        existingComponents: serviceComponents[value],
-        allComponents: serviceComponents
+      console.log('Selected service:', {
+        id: value,
+        field,
+        permissionId: id
       });
-
       if (!serviceComponents[value]) {
         try {
           setIsLoadingComponents(true);
           const data = await getDatabaseObjects(value);
-          console.log('Raw data from server:', data);
-
-          // Verify data structure
-          if (!Array.isArray(data)) {
-            console.error('Server returned non-array data:', data);
-            setError('Invalid data format received');
-            return;
-          }
-
-          const sortedComponents = sortAndGroupComponents(data);
-          console.log('Processed components:', sortedComponents);
-
-          setServiceComponents(prev => {
-            const updated = {
-              ...prev,
-              [value]: sortedComponents
-            };
-            console.log('Updated service components:', updated);
-            return updated;
-          });
+          console.log('Received database objects:', data);
+          
+          setServiceComponents(prev => ({
+            ...prev,
+            [value]: data
+          }));
         } catch (err) {
-          console.error('Component fetch error:', {
-            error: err,
-            serviceId: value,
-            message: err.message
-          });
+          console.error('Error fetching components:', err);
           setError('Failed to fetch components');
         } finally {
           setIsLoadingComponents(false);

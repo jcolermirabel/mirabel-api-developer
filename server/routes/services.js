@@ -149,14 +149,23 @@ router.get('/:serviceId/objects', async (req, res) => {
     });
 
     const objects = await pool.request().query(`
-      SELECT name, type_desc 
-      FROM sys.objects 
-      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')
-      ORDER BY type_desc, name
+      SELECT 
+        o.name,
+        o.type_desc,
+        o.type,
+        s.name as schema_name
+      FROM sys.objects o
+      JOIN sys.schemas s ON o.schema_id = s.schema_id
+      WHERE o.type IN ('U', 'V', 'P', 'FN', 'IF', 'TF')
+        AND o.is_ms_shipped = 0
+      ORDER BY o.type_desc, o.name;
     `);
 
-    console.log('Found objects:', objects.recordset.length);
-    console.log('Sample objects:', objects.recordset.slice(0, 3));
+    console.log('SQL Query Results:', {
+      total: objects.recordset.length,
+      types: [...new Set(objects.recordset.map(o => o.type_desc))],
+      sample: objects.recordset.slice(0, 3)
+    });
     
     res.json(objects.recordset || []);
   } catch (error) {

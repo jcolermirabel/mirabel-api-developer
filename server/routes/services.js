@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
 
 router.post('/test', testConnection);
 
-// Objects endpoint with enhanced logging
+// Objects endpoint using same approach as test connection
 router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
@@ -121,47 +121,43 @@ router.get('/:serviceId/objects', async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    console.log('Service found:', {
-      name: service.name,
+    // Use the same connection approach that worked in test connection
+    const connectionData = {
+      username: service.username,
+      password: decryptDatabasePassword(service.password),
       host: service.host,
       port: service.port,
-      database: service.database,
-      username: service.username
-    });
+      database: service.database
+    };
 
-    // Decrypt password
-    const password = decryptDatabasePassword(service.password);
-    console.log('Password decrypted successfully');
+    const result = await databaseService.testConnection(connectionData);
+    if (!result.success) {
+      console.error('Connection failed:', result.error);
+      return res.status(500).json({ message: 'Failed to connect to database' });
+    }
 
-    const config = {
-      user: service.username,
-      password: password,
-      server: service.host,
-      port: parseInt(service.port),
-      database: service.database,
+    // Now that we know connection works, get the objects
+    pool = await sql.connect({
+      user: connectionData.username,
+      password: connectionData.password,
+      server: connectionData.host,
+      port: parseInt(connectionData.port),
+      database: connectionData.database,
       options: {
         encrypt: false,
         trustServerCertificate: true
       }
-    };
-
-    console.log('Connecting with config:', {
-      ...config,
-      password: '[REDACTED]'
     });
 
-    pool = await sql.connect(config);
-    console.log('SQL connection established');
-
-    const result = await pool.request().query(`
+    const objects = await pool.request().query(`
       SELECT name, type_desc 
       FROM sys.objects 
-      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')  -- Added V for views, U for tables
+      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')
       ORDER BY type_desc, name
     `);
 
-    console.log(`Found ${result.recordset.length} objects`);
-    res.json(result.recordset);
+    console.log(`Found ${objects.recordset.length} objects`);
+    res.json(objects.recordset || []);  // Return empty array if no results
 
   } catch (error) {
     console.error('Error fetching objects:', {

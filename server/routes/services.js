@@ -114,13 +114,16 @@ router.get('/:serviceId/objects', async (req, res) => {
   try {
     console.log('\n=== Fetching Objects for Service ===');
     console.log('ServiceID:', req.params.serviceId);
+    console.log('Request headers:', req.headers);
     
     const service = await Service.findById(req.params.serviceId);
+    console.log('Service lookup result:', service ? 'Found' : 'Not Found');
+    
     if (!service) {
       console.error('Service not found:', req.params.serviceId);
       return res.status(404).json({ message: 'Service not found' });
     }
-
+ 
     console.log('MongoDB Service Found:', {
       id: service._id.toString(),
       name: service.name,
@@ -129,10 +132,10 @@ router.get('/:serviceId/objects', async (req, res) => {
       database: service.database,
       username: service.username
     });
-
+ 
     const decryptedPassword = decryptDatabasePassword(service.password);
     console.log('Password decrypted successfully');
-
+ 
     const connectionConfig = {
       user: service.username,
       password: decryptedPassword,
@@ -145,15 +148,16 @@ router.get('/:serviceId/objects', async (req, res) => {
         connectTimeout: 30000
       }
     };
-
+ 
     console.log('Attempting SQL connection with:', {
       ...connectionConfig,
       password: '[REDACTED]'
     });
-
+ 
     pool = await sql.connect(connectionConfig);
     console.log('SQL connection established');
-
+ 
+    console.log('About to execute SQL query');
     const objects = await pool.request().query(`
       SELECT 
         o.name,
@@ -173,7 +177,13 @@ router.get('/:serviceId/objects', async (req, res) => {
         AND s.name = 'dbo'
       ORDER BY o.type_desc, o.name;
     `);
-
+    
+    console.log('Raw query results:', {
+      hasRecordset: !!objects.recordset,
+      recordCount: objects.recordset?.length,
+      firstRecord: objects.recordset?.[0]
+    });
+ 
     console.log('Query Results:', {
       total: objects.recordset.length,
       byType: {
@@ -187,16 +197,20 @@ router.get('/:serviceId/objects', async (req, res) => {
         procedures: objects.recordset.filter(o => o.object_category === 'PROCEDURE').slice(0, 2)
       }
     });
-
+ 
     res.json(objects.recordset || []);
   } catch (error) {
-    console.error('Error in objects endpoint:', {
+    console.error('Detailed error in objects endpoint:', {
       message: error.message,
       stack: error.stack,
       code: error.code,
-      state: error.state
+      state: error.state,
+      name: error.name
     });
-    res.status(500).json({ message: 'Failed to fetch objects' });
+    res.status(500).json({ 
+      message: 'Failed to fetch objects',
+      error: error.message 
+    });
   } finally {
     if (pool) {
       try {
@@ -207,6 +221,6 @@ router.get('/:serviceId/objects', async (req, res) => {
       }
     }
   }
-});
+ });
 
 module.exports = router;

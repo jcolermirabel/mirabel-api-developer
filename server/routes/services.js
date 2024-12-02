@@ -108,15 +108,34 @@ router.get('/', async (req, res) => {
 
 router.post('/test', testConnection);
 
-// Add this endpoint
+// Objects endpoint with enhanced logging
 router.get('/:serviceId/objects', async (req, res) => {
+  let pool;
   try {
-    console.log('Fetching objects for service:', req.params.serviceId);
-    const service = await Service.findById(req.params.serviceId);
+    console.log('\n=== Fetching Database Objects ===');
+    console.log('Service ID:', req.params.serviceId);
     
+    const service = await Service.findById(req.params.serviceId);
+    if (!service) {
+      console.error('Service not found');
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    console.log('Service found:', {
+      name: service.name,
+      host: service.host,
+      port: service.port,
+      database: service.database,
+      username: service.username
+    });
+
+    // Decrypt password
+    const password = decryptDatabasePassword(service.password);
+    console.log('Password decrypted successfully');
+
     const config = {
       user: service.username,
-      password: decryptDatabasePassword(service.password),
+      password: password,
       server: service.host,
       port: parseInt(service.port),
       database: service.database,
@@ -126,18 +145,40 @@ router.get('/:serviceId/objects', async (req, res) => {
       }
     };
 
-    const pool = await sql.connect(config);
+    console.log('Connecting with config:', {
+      ...config,
+      password: '[REDACTED]'
+    });
+
+    pool = await sql.connect(config);
+    console.log('SQL connection established');
+
     const result = await pool.request().query(`
       SELECT name, type_desc 
       FROM sys.objects 
-      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')  // Added V for views, U for tables
+      WHERE type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')  -- Added V for views, U for tables
       ORDER BY type_desc, name
     `);
 
+    console.log(`Found ${result.recordset.length} objects`);
     res.json(result.recordset);
+
   } catch (error) {
-    console.error('Error fetching objects:', error);
+    console.error('Error fetching objects:', {
+      message: error.message,
+      code: error.code,
+      state: error.state
+    });
     res.status(500).json({ message: 'Failed to fetch objects' });
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+        console.log('SQL connection closed');
+      } catch (closeError) {
+        console.error('Error closing connection:', closeError);
+      }
+    }
   }
 });
 

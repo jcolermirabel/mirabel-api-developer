@@ -1,4 +1,3 @@
-const { Connection, Request } = require('tedious');
 const sql = require('mssql');
 const { decryptDatabasePassword } = require('./encryption');
 const { logger } = require('../middleware/logger');

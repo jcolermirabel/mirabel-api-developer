@@ -1,4 +1,3 @@
-const { Connection, Request } = require('tedious');
 const crypto = require('crypto');
 
 const decryptPassword = (encryptedPassword, iv) => {

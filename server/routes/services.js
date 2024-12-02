@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
-const { Connection, Request } = require('tedious');
 const { decryptDatabasePassword } = require('../utils/encryption');
 const { logger } = require('../middleware/logger');
 const databaseService = require('../services/databaseService');

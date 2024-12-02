@@ -31,45 +31,35 @@ const getConnectionConfig = (config) => {
 };
 
 const testConnection = async (config) => {
-  return new Promise((resolve, reject) => {
-    console.log('\n=== Starting SQL Connection Test ===');
-    console.log('Connection config:', {
+  try {
+    const connectionConfig = {
+      user: config.username,
+      password: config.password,
       server: config.host,
-      port: config.port,
+      port: parseInt(config.port),
       database: config.database,
-      username: config.username,
       options: {
+        trustServerCertificate: true,
         encrypt: false,
-        trustServerCertificate: true
+        enableArithAbort: true,
+        connectTimeout: 30000,
+        requestTimeout: 30000
       }
+    };
+
+    console.log('Testing connection with:', {
+      ...connectionConfig,
+      password: '[REDACTED]'
     });
 
-    const connection = new Connection(getConnectionConfig(config));
-
-    connection.on('debug', console.log);
-    connection.on('error', console.error);
-    connection.on('errorMessage', console.error);
-    connection.on('infoMessage', console.log);
-    
-    connection.on('connect', (err) => {
-      if (err) {
-        console.error('Connection failed:', err);
-        connection.close();
-        resolve({ 
-          success: false, 
-          error: err.message,
-          details: err
-        });
-        return;
-      }
-
-      console.log('Connected successfully');
-      connection.close();
-      resolve({ success: true });
-    });
-
-    connection.connect();
-  });
+    const pool = await sql.connect(connectionConfig);
+    const result = await pool.request().query('SELECT 1 as test');
+    await pool.close();
+    return { success: true };
+  } catch (error) {
+    console.error('Connection failed:', error);
+    return { success: false, error: error.message };
+  }
 };
 
 module.exports = {

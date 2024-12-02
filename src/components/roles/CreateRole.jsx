@@ -27,22 +27,31 @@ import { getDatabaseObjects } from '../../services/roleService';
 const STEPS = ['Basic Information', 'Service Access'];
 
 const sortAndGroupComponents = (data) => {
-  if (!data) return { tables: [], views: [], procedures: [] };
+  console.log('sortAndGroupComponents input:', data);
+  
+  if (!data) {
+    console.log('No data provided, returning empty arrays');
+    return { tables: [], views: [], procedures: [] };
+  }
   
   // If data is already in the right format, return it
   if (data.tables && data.views && data.procedures) {
+    console.log('Data already grouped, returning as is');
     return data;
   }
 
   // Otherwise, sort the raw SQL data
   const sortByName = (a, b) => a.name.localeCompare(b.name);
 
-  return {
-    tables: data.filter(o => o.type === 'U').map(o => o.name).sort(sortByName),
-    views: data.filter(o => o.type === 'V').map(o => o.name).sort(sortByName),
-    procedures: data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o.type))
-      .map(o => o.name).sort(sortByName)
+  const grouped = {
+    tables: Array.isArray(data) ? data.filter(o => o.type === 'U').map(o => o.name).sort(sortByName) : [],
+    views: Array.isArray(data) ? data.filter(o => o.type === 'V').map(o => o.name).sort(sortByName) : [],
+    procedures: Array.isArray(data) ? data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o.type))
+      .map(o => o.name).sort(sortByName) : []
   };
+
+  console.log('Grouped components:', grouped);
+  return grouped;
 };
 
 const CreateRole = ({ mode = 'create', existingRole = null }) => {
@@ -178,7 +187,9 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
         try {
           setIsLoadingComponents(true);
           const data = await getDatabaseObjects(value);
+          console.log('Received database objects:', data);
           const sortedComponents = sortAndGroupComponents(data);
+          console.log('Sorted components:', sortedComponents);
           setServiceComponents(prev => ({
             ...prev,
             [value]: sortedComponents

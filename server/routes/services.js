@@ -113,16 +113,16 @@ router.get('/:serviceId/objects', async (req, res) => {
   let pool;
   try {
     console.log('\n=== Fetching Objects for Service ===');
+    console.log('ServiceID:', req.params.serviceId);
     
-    // Get service from MongoDB
     const service = await Service.findById(req.params.serviceId);
     if (!service) {
       console.error('Service not found:', req.params.serviceId);
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    console.log('MongoDB Service Details:', {
-      id: service._id,
+    console.log('MongoDB Service Found:', {
+      id: service._id.toString(),
       name: service.name,
       host: service.host,
       port: service.port,
@@ -130,8 +130,9 @@ router.get('/:serviceId/objects', async (req, res) => {
       username: service.username
     });
 
-    // Decrypt and prepare connection
     const decryptedPassword = decryptDatabasePassword(service.password);
+    console.log('Password decrypted successfully');
+
     const connectionConfig = {
       user: service.username,
       password: decryptedPassword,
@@ -140,18 +141,20 @@ router.get('/:serviceId/objects', async (req, res) => {
       database: service.database,
       options: {
         encrypt: false,
-        trustServerCertificate: true
+        trustServerCertificate: true,
+        connectTimeout: 30000
       }
     };
 
-    console.log('SQL Connection Config:', {
+    console.log('Attempting SQL connection with:', {
       ...connectionConfig,
       password: '[REDACTED]'
     });
 
-    // Connect and query
     pool = await sql.connect(connectionConfig);
-    const objects = await pool.request().query(`
+    console.log('SQL connection established');
+
+    const query = `
       SELECT 
         o.name,
         o.type_desc,
@@ -163,7 +166,10 @@ router.get('/:serviceId/objects', async (req, res) => {
         AND o.is_ms_shipped = 0
         AND s.name = 'dbo'
       ORDER BY o.type_desc, o.name;
-    `);
+    `;
+
+    console.log('Executing SQL query:', query);
+    const objects = await pool.request().query(query);
 
     console.log('Query Results:', {
       total: objects.recordset.length,
@@ -171,18 +177,28 @@ router.get('/:serviceId/objects', async (req, res) => {
         tables: objects.recordset.filter(o => o.type === 'U').length,
         views: objects.recordset.filter(o => o.type === 'V').length,
         procedures: objects.recordset.filter(o => o.type === 'P').length
-      }
+      },
+      firstFew: objects.recordset.slice(0, 3)
     });
 
     res.json(objects.recordset || []);
   } catch (error) {
-    console.error('Error:', {
+    console.error('Error in objects endpoint:', {
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      code: error.code,
+      state: error.state
     });
     res.status(500).json({ message: 'Failed to fetch objects' });
   } finally {
-    if (pool) await pool.close();
+    if (pool) {
+      try {
+        await pool.close();
+        console.log('SQL connection closed');
+      } catch (closeError) {
+        console.error('Error closing connection:', closeError);
+      }
+    }
   }
 });
 

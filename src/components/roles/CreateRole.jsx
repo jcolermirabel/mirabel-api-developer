@@ -27,13 +27,22 @@ import { getDatabaseObjects } from '../../services/roleService';
 const STEPS = ['Basic Information', 'Service Access'];
 
 const sortAndGroupComponents = (data) => {
+  if (!data) return { tables: [], views: [], procedures: [] };
+  
+  // If data is already in the right format, return it
+  if (data.tables && data.views && data.procedures) {
+    return data;
+  }
+
+  // Otherwise, sort the raw SQL data
   const sortByName = (a, b) => a.name.localeCompare(b.name);
 
-  const tables = data.tables.map(t => ({ name: t, type: 'tables' })).sort(sortByName);
-  const views = data.views.map(v => ({ name: v, type: 'views' })).sort(sortByName);
-  const procedures = data.procedures.map(p => ({ name: p, type: 'procedures' })).sort(sortByName);
-
-  return [...tables, ...views, ...procedures];
+  return {
+    tables: data.filter(o => o.type === 'U').map(o => o.name).sort(sortByName),
+    views: data.filter(o => o.type === 'V').map(o => o.name).sort(sortByName),
+    procedures: data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o.type))
+      .map(o => o.name).sort(sortByName)
+  };
 };
 
 const CreateRole = ({ mode = 'create', existingRole = null }) => {

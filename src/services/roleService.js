@@ -75,34 +75,7 @@ export const getDatabaseObjects = async (serviceId) => {
     });
     
     console.log('Raw SQL objects:', response.data);
-    
-    // Transform the data into tables, views, procedures
-    const objects = response.data || [];
-    const grouped = {
-      tables: objects
-        .filter(o => o.type === 'U')
-        .map(o => o.name),
-      views: objects
-        .filter(o => o.type === 'V')
-        .map(o => o.name),
-      procedures: objects
-        .filter(o => ['P', 'FN', 'IF', 'TF'].includes(o.type))
-        .map(o => o.name)
-    };
-    
-    console.log('Grouped objects:', {
-      totalObjects: objects.length,
-      tables: grouped.tables.length,
-      views: grouped.views.length,
-      procedures: grouped.procedures.length,
-      sample: {
-        tables: grouped.tables.slice(0, 2),
-        views: grouped.views.slice(0, 2),
-        procedures: grouped.procedures.slice(0, 2)
-      }
-    });
-    
-    return grouped;
+    return response.data;
   } catch (error) {
     console.error('Error in getDatabaseObjects:', error);
     throw error;

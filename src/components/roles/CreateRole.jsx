@@ -40,14 +40,23 @@ const sortAndGroupComponents = (data) => {
     return data;
   }
 
+  // Ensure data is an array and has name property before sorting
+  if (!Array.isArray(data) || !data.length || !data[0]?.name) {
+    console.log('Invalid data format, returning empty arrays');
+    return { tables: [], views: [], procedures: [] };
+  }
+
   // Otherwise, sort the raw SQL data
-  const sortByName = (a, b) => a.name.localeCompare(b.name);
+  const sortByName = (a, b) => {
+    if (!a?.name || !b?.name) return 0;
+    return a.name.localeCompare(b.name);
+  };
 
   const grouped = {
-    tables: Array.isArray(data) ? data.filter(o => o.type === 'U').map(o => o.name).sort(sortByName) : [],
-    views: Array.isArray(data) ? data.filter(o => o.type === 'V').map(o => o.name).sort(sortByName) : [],
-    procedures: Array.isArray(data) ? data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o.type))
-      .map(o => o.name).sort(sortByName) : []
+    tables: data.filter(o => o?.type === 'U').map(o => o.name).sort(),
+    views: data.filter(o => o?.type === 'V').map(o => o.name).sort(),
+    procedures: data.filter(o => ['P', 'FN', 'IF', 'TF'].includes(o?.type))
+      .map(o => o.name).sort()
   };
 
   console.log('Grouped components:', grouped);
@@ -186,14 +195,27 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
       if (!serviceComponents[value]) {
         try {
           setIsLoadingComponents(true);
+          console.log('Fetching components for service:', value);
           const data = await getDatabaseObjects(value);
-          console.log('Received database objects:', data);
+          console.log('Raw data from getDatabaseObjects:', data);
+          
+          if (!data) {
+            console.warn('No data received from getDatabaseObjects');
+            setError('No components found');
+            return;
+          }
+
           const sortedComponents = sortAndGroupComponents(data);
           console.log('Sorted components:', sortedComponents);
-          setServiceComponents(prev => ({
-            ...prev,
-            [value]: sortedComponents
-          }));
+          
+          setServiceComponents(prev => {
+            const updated = {
+              ...prev,
+              [value]: sortedComponents
+            };
+            console.log('Updated serviceComponents:', updated);
+            return updated;
+          });
         } catch (err) {
           console.error('Error fetching components:', err);
           setError('Failed to fetch components');

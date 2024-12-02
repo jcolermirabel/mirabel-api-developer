@@ -74,10 +74,23 @@ export const getDatabaseObjects = async (serviceId) => {
       headers: getAuthHeaders()
     });
     
-    console.log('Raw SQL objects:', response.data);
+    console.log('Raw response:', response);
+    console.log('Response data:', response.data);
+
+    // Ensure we return an array
+    if (!response.data) {
+      console.warn('No data received from server');
+      return [];
+    }
+
     return response.data;
   } catch (error) {
-    console.error('Error in getDatabaseObjects:', error);
+    console.error('Error in getDatabaseObjects:', {
+      error,
+      response: error.response,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     throw error;
   }
 }; 

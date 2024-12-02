@@ -190,21 +190,22 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
 
   const handlePermissionChange = async (id, field, value) => {
     if (field === 'service') {
-      console.log('Selected service:', {
-        id: value,
-        field,
-        permissionId: id
-      });
+      console.log('Selected service:', { id: value, field, permissionId: id });
       if (!serviceComponents[value]) {
         try {
           setIsLoadingComponents(true);
           const data = await getDatabaseObjects(value);
           console.log('Received database objects:', data);
           
-          setServiceComponents(prev => ({
-            ...prev,
-            [value]: data
-          }));
+          if (data && typeof data === 'object') {
+            setServiceComponents(prev => ({
+              ...prev,
+              [value]: data
+            }));
+          } else {
+            console.error('Invalid data format:', data);
+            setError('Invalid data format received');
+          }
         } catch (err) {
           console.error('Error fetching components:', err);
           setError('Failed to fetch components');

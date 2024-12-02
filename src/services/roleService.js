@@ -69,14 +69,10 @@ export const getRoleById = async (roleId) => {
 
 export const getDatabaseObjects = async (serviceId) => {
   try {
-    console.log('Fetching objects for service:', serviceId);
     const response = await axios.get(`${API_URL}/services/${serviceId}/objects`, {
       headers: getAuthHeaders()
     });
-    
-    console.log('Raw response:', response.data);
 
-    // Transform the data into the expected format
     const objects = response.data || [];
     const grouped = {
       tables: objects.filter(o => o.type === 'U').map(o => o.name),
@@ -84,7 +80,6 @@ export const getDatabaseObjects = async (serviceId) => {
       procedures: objects.filter(o => o.type === 'P').map(o => o.name)
     };
 
-    console.log('Grouped objects:', grouped);
     return grouped;
   } catch (error) {
     console.error('Error in getDatabaseObjects:', error);

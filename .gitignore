@@ -8,6 +8,7 @@ server/.env.production
 server/.env.backup
 server/env_backup/
 server/app.js.backup
+.env.production
 
 # Dependencies
 node_modules/

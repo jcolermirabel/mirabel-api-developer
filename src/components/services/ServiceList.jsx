@@ -13,9 +13,10 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Security as SecurityIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { getServices, deleteService, updateService } from '../../services/serviceService';
+import { getServices, deleteService, updateService, refreshServiceSchema } from '../../services/serviceService';
 import ServiceForm from './ServiceForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -31,6 +32,7 @@ const ServiceList = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [openForm, setOpenForm] = useState(false);
   const [editService, setEditService] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, serviceId: null });
@@ -86,6 +88,28 @@ const ServiceList = () => {
     }
   };
 
+  const handleRefreshSchema = async (serviceId) => {
+    try {
+      console.log('Refreshing schema for service:', serviceId);
+      const result = await refreshServiceSchema(serviceId);
+      setError('');
+      setSuccess(`Schema refreshed for ${result.service}: ${result.objectCount.total} objects found (${result.objectCount.tables} tables, ${result.objectCount.views} views, ${result.objectCount.procedures} procedures)`);
+      
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+    } catch (err) {
+      console.error('Schema refresh failed:', err);
+      setSuccess('');
+      if (err.response?.status === 401) {
+        console.log('Authentication error, redirecting to login');
+        navigate('/login');
+      } else {
+        setError('Failed to refresh service schema');
+      }
+    }
+  };
+
   const prepareExportData = () => {
     return services.map(service => ({
       Name: service.name,
@@ -110,6 +134,9 @@ const ServiceList = () => {
       overflow: 'hidden',
       p: 1
     }}>
+      {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 1 }}>{success}</Alert>}
+      
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -275,6 +302,9 @@ const ServiceList = () => {
                       color="error"
                     >
                       <DeleteIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleRefreshSchema(service._id)}>
+                      <RefreshIcon />
                     </IconButton>
                   </Box>
                 </TableCell>

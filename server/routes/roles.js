@@ -4,6 +4,7 @@ const Role = require('../models/Role');
 const { authMiddleware } = require('../middleware/auth'); // Import specifically authMiddleware
 const { fetchSchemaFromDatabase } = require('../utils/schemaUtils');
 const { logger } = require('../middleware/logger');
+const Service = require('../models/Service');
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
@@ -35,25 +36,43 @@ router.get('/:id', async (req, res) => {
 // Create new role
 router.post('/', async (req, res) => {
   try {
+    console.log('Creating role with data:', req.body);
+
     const role = new Role({
       ...req.body,
       createdBy: req.user.userId
     });
 
-    // Fetch schemas for each permission
-    for (const permission of role.permissions) {
-      try {
-        const schema = await fetchSchemaFromDatabase(permission.service, permission.objectName);
-        permission.schema = schema;
-      } catch (error) {
-        logger.warn(`Failed to fetch schema for ${permission.objectName}`, error);
-      }
+    // Validate service exists
+    const service = await Service.findById(role.serviceId);
+    if (!service) {
+      console.error('Service not found:', role.serviceId);
+      return res.status(404).json({ message: 'Service not found' });
     }
 
+    // Validate permissions
+    if (!role.permissions || !Array.isArray(role.permissions)) {
+      console.error('Invalid permissions format:', role.permissions);
+      return res.status(400).json({ message: 'Invalid permissions format' });
+    }
+
+    // Log validation before save
+    console.log('Role before save:', role.toObject());
+
     await role.save();
+    console.log('Role saved successfully:', role._id);
+
     res.status(201).json(role);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create role' });
+    console.error('Error creating role:', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ 
+      message: 'Failed to create role',
+      details: error.message 
+    });
   }
 });
 
@@ -78,6 +97,35 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Role deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete role' });
+  }
+});
+
+// Refresh service schema
+router.post('/:id/refresh-schema', async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    const schema = await fetchSchemaFromDatabase(service);
+    service.schema = schema;
+    await service.save();
+    res.json(service);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to refresh service schema' });
+  }
+});
+
+// Get service schema
+router.get('/:id/schema', async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    res.json(service.schema);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch service schema' });
   }
 });
 

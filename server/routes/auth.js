@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { logger } = require('../utils/logger');
 
 // Login
 router.post('/login', async (req, res) => {
@@ -98,47 +99,45 @@ router.post('/login', async (req, res) => {
 
 // Refresh token
 router.post('/refresh', async (req, res) => {
-  const token = req.cookies.token;
-  
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
+  logger.info('Token refresh requested', {
+    headers: req.headers,
+    cookies: req.cookies
+  });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-    
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+    const oldToken = req.headers.authorization?.split(' ')[1];
+    if (!oldToken) {
+      logger.error('No token provided for refresh');
+      return res.status(401).json({ message: 'No token provided' });
     }
 
-    // Generate new token
-    const newToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Verify the old token
+    try {
+      const decoded = jwt.verify(oldToken, process.env.JWT_SECRET, { ignoreExpiration: true });
+      logger.info('Old token decoded', {
+        userId: decoded.userId,
+        exp: new Date(decoded.exp * 1000)
+      });
 
-    // Set new cookie
-    res.cookie('token', newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+      // Generate new token
+      const newToken = jwt.sign(
+        { userId: decoded.userId },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
 
-    res.json({
-      token: newToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isAdmin: user.isAdmin
-      }
-    });
+      logger.info('New token generated');
+      res.json({ token: newToken });
+    } catch (error) {
+      logger.error('Token refresh failed', {
+        error: error.message,
+        name: error.name
+      });
+      res.status(401).json({ message: 'Invalid token' });
+    }
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+    logger.error('Refresh endpoint error', error);
+    res.status(500).json({ message: 'Token refresh failed' });
   }
 });
 

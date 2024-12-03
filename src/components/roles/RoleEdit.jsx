@@ -1,46 +1,41 @@
-import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { CircularProgress, Alert, Button } from '@mui/material';
+import { useParams } from 'react-router-dom';
 import { getRoleById } from '../../services/roleService';
 import CreateRole from './CreateRole';
+import LoadingSpinner from '../common/LoadingSpinner';
+import Alert from '@mui/material/Alert';
 
-export function RoleEdit() {
+const RoleEdit = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchRole = async () => {
       try {
+        setLoading(true);
         const data = await getRoleById(id);
+        console.log('Fetched role data:', data);
         setRole(data);
       } catch (err) {
-        setError(err.message);
+        console.error('Error fetching role:', err);
+        setError('Failed to fetch role');
       } finally {
         setLoading(false);
       }
     };
-    fetchRole();
+
+    if (id) {
+      fetchRole();
+    }
   }, [id]);
 
-  if (loading) return <CircularProgress />;
-  if (error) return (
-    <div>
-      <Alert severity="error">{error}</Alert>
-      <Button 
-        variant="contained" 
-        onClick={() => navigate('/roles')}
-        sx={{ mt: 2 }}
-      >
-        Back to Roles
-      </Button>
-    </div>
-  );
+  if (loading) return <LoadingSpinner />;
+  if (error) return <Alert severity="error">{error}</Alert>;
   if (!role) return <Alert severity="error">Role not found</Alert>;
 
   return <CreateRole mode="edit" existingRole={role} />;
-}
+};
 
 export default RoleEdit; 

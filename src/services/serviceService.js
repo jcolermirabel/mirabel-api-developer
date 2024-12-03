@@ -22,4 +22,9 @@ export const deleteService = async (id) => {
 export const testConnection = async (connectionData) => {
   const response = await api.post('/api/services/test', connectionData);
   return response.data;
+};
+
+export const refreshServiceSchema = async (id) => {
+  const response = await api.post(`/api/services/${id}/refresh-schema`);
+  return response.data;
 }; 

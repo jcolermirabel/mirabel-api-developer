@@ -3,16 +3,6 @@ const Service = require('../models/Service');
 
 const apiKeyAuth = async (req, res, next) => {
   try {
-    console.log('API Key Auth - Request:', {
-      method: req.method,
-      path: req.path,
-      params: req.params,
-      query: req.query,
-      headers: {
-        'x-mirabel-api': req.headers['x-mirabel-api'] ? 'present' : 'missing'
-      }
-    });
-
     const apiKey = req.headers['x-mirabel-api'];
     
     if (!apiKey) {
@@ -23,47 +13,45 @@ const apiKeyAuth = async (req, res, next) => {
     const application = await Application.findOne({ 
       apiKey: apiKey,
       isActive: true
-    }).populate({
-      path: 'defaultRole',
-      match: { isActive: true }
     });
 
-    console.log('API Key Auth - Application:', {
-      found: !!application,
-      name: application?.name,
-      hasRole: !!application?.defaultRole
-    });
-
-    if (!application || !application.defaultRole) {
-      return res.status(403).json({ message: 'Invalid API key or inactive application' });
+    if (!application) {
+      return res.status(403).json({ message: 'Invalid API key' });
     }
 
     // Extract service name from path
     const pathParts = req.path.split('/');
-    const serviceIndex = pathParts.indexOf('services');
+    const serviceIndex = pathParts.indexOf('v2');
     const serviceName = serviceIndex >= 0 ? pathParts[serviceIndex + 1] : null;
 
-    console.log('API Key Auth - Path analysis:', {
-      path: req.path,
+    console.log('Service lookup:', {
       pathParts,
       serviceIndex,
-      serviceName
+      serviceName,
+      fullPath: req.path
     });
 
-    // Find service
+    // Find service with detailed logging
     const service = await Service.findOne({ 
       name: serviceName,
       isActive: true
     });
 
-    console.log('API Key Auth - Service:', {
+    console.log('Service query result:', {
+      searched: serviceName,
       found: !!service,
-      name: service?.name,
-      id: service?._id
+      serviceDetails: service ? {
+        id: service._id,
+        name: service.name,
+        isActive: service.isActive
+      } : null
     });
 
     if (!service) {
-      return res.status(404).json({ message: 'Service not found or inactive' });
+      return res.status(404).json({ 
+        message: 'Service not found',
+        searched: serviceName
+      });
     }
 
     // Add both application and service to request

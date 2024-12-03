@@ -1,32 +1,74 @@
 const sql = require('mssql');
-const { decryptDatabasePassword } = require('./encryption');
-const { logger } = require('../middleware/logger');
+const { logger } = require('./logger');
 
-async function fetchSchemaFromDatabase(pool, objectName) {
+async function fetchSchemaFromDatabase(service) {
   try {
-    console.log('Fetching schema for:', objectName);
-    console.log('Connection state:', {
-      connected: pool.connected,
-      config: {
-        server: pool.config.server,
-        port: pool.config.port,
-        database: pool.config.database
+    const config = {
+      user: service.username,
+      password: service.password,
+      server: service.host,
+      database: service.database,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true,
+        connectTimeout: 30000,
+        requestTimeout: 30000
       }
-    });
+    };
 
-    const result = await pool.request()
-      .input('objectName', sql.VarChar, objectName)
-      .query(`
-        SELECT name, type_desc 
-        FROM sys.objects 
-        WHERE name = @objectName
-      `);
+    const pool = await sql.connect(config);
 
-    return result.recordset;
+    // Simpler queries that just get names
+    const tables = await pool.request().query(`
+      SELECT SCHEMA_NAME(schema_id) as schema_name, name 
+      FROM sys.tables 
+      WHERE is_ms_shipped = 0 
+      ORDER BY name
+    `);
+
+    const views = await pool.request().query(`
+      SELECT SCHEMA_NAME(schema_id) as schema_name, name 
+      FROM sys.views 
+      WHERE is_ms_shipped = 0 
+      ORDER BY name
+    `);
+
+    const procedures = await pool.request().query(`
+      SELECT SCHEMA_NAME(schema_id) as schema_name, name 
+      FROM sys.procedures 
+      WHERE is_ms_shipped = 0 
+      ORDER BY name
+    `);
+
+    await pool.close();
+
+    // Process the results to create paths
+    return {
+      tables: tables.recordset.map(t => ({ 
+        name: t.name,
+        path: `/table/${t.schema_name}.${t.name}`
+      })),
+      views: views.recordset.map(v => ({ 
+        name: v.name,
+        path: `/view/${v.schema_name}.${v.name}`
+      })),
+      procedures: procedures.recordset.map(p => ({ 
+        name: p.name,
+        path: `/proc/${p.schema_name}.${p.name}`
+      }))
+    };
   } catch (error) {
-    console.error('Schema fetch error:', error);
-    throw error;
+    logger.error('Error fetching database schema:', error);
+    throw new Error('Failed to fetch database schema');
+  } finally {
+    try {
+      await sql.close();
+    } catch (err) {
+      console.error('Error closing SQL connection:', err);
+    }
   }
 }
 
-module.exports = { fetchSchemaFromDatabase }; 
+module.exports = {
+  fetchSchemaFromDatabase
+}; 

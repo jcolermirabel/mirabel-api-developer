@@ -121,12 +121,12 @@ const RoleList = () => {
 
   const handleToggleActive = async (role) => {
     try {
-      await updateRole(role._id, { ...role, isActive: !role.isActive });
-      setRoles(roles.map(r => 
-        r._id === role._id 
-          ? { ...r, isActive: !r.isActive }
-          : r
-      ));
+      const updatedRole = {
+        ...role,
+        isActive: !role.isActive
+      };
+      await updateRole(role._id, updatedRole);
+      await fetchRoles();
     } catch (err) {
       setError('Failed to update role status');
     }
@@ -200,7 +200,7 @@ const RoleList = () => {
                 <TableCell>{role.description}</TableCell>
                 <TableCell>
                   <Switch
-                    checked={role.isActive}
+                    checked={role.isActive || false}
                     onChange={() => handleToggleActive(role)}
                     color="primary"
                   />

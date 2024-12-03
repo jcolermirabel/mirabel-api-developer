@@ -1,10 +1,120 @@
 const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
-const { decryptDatabasePassword } = require('../utils/encryption');
-const { logger } = require('../middleware/logger');
-const databaseService = require('../services/databaseService');
+const { authMiddleware } = require('../middleware/auth');
+const { fetchSchemaFromDatabase } = require('../utils/schemaUtils');
+const { encryptDatabasePassword, decryptDatabasePassword } = require('../utils/encryption');
+const { logger } = require('../utils/logger');
 const sql = require('mssql');
+const DatabaseObject = require('../models/DatabaseObject');
+
+router.use(authMiddleware);
+
+// Create service
+router.post('/', async (req, res) => {
+  try {
+    // Encrypt the password before saving
+    const encryptedPassword = encryptDatabasePassword(req.body.password);
+    
+    const service = new Service({
+      ...req.body,
+      password: encryptedPassword,
+      createdBy: req.user.userId
+    });
+
+    // Fetch and store schema when creating service
+    const schema = await fetchSchemaFromDatabase({
+      ...service.toObject(),
+      password: req.body.password // Use original password for schema fetch
+    });
+    service.databaseSchema = schema;
+
+    await service.save();
+    res.status(201).json(service);
+  } catch (error) {
+    logger.error('Error creating service:', error);
+    res.status(500).json({ message: 'Failed to create service' });
+  }
+});
+
+// Refresh schema
+router.post('/:id/refresh-schema', async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+
+    logger.info(`Refreshing schema for service: ${service.name} (${service._id})`);
+
+    const decryptedPassword = decryptDatabasePassword(service.password);
+    const schema = await fetchSchemaFromDatabase({
+      ...service.toObject(),
+      password: decryptedPassword
+    });
+
+    const objectPaths = [
+      ...schema.tables.map(t => ({ path: t.path })),
+      ...schema.views.map(v => ({ path: v.path })),
+      ...schema.procedures.map(p => ({ path: p.path }))
+    ];
+
+    // Update or create database objects record
+    const updatedObjects = await DatabaseObject.findOneAndUpdate(
+      { serviceId: service._id },
+      { 
+        serviceId: service._id,
+        objects: objectPaths
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({ 
+      message: 'Schema refreshed successfully',
+      service: service.name,
+      objectCount: {
+        tables: schema.tables.length,
+        views: schema.views.length,
+        procedures: schema.procedures.length,
+        total: objectPaths.length
+      }
+    });
+  } catch (error) {
+    logger.error('Error refreshing schema:', error);
+    res.status(500).json({ message: 'Failed to refresh schema' });
+  }
+});
+
+// Get schema for a service
+router.get('/:id/schema', async (req, res) => {
+  try {
+    const dbObjects = await DatabaseObject.findOne({ serviceId: req.params.id });
+    if (!dbObjects) {
+      return res.json({
+        tables: [],
+        views: [],
+        procedures: []
+      });
+    }
+
+    const schema = {
+      tables: dbObjects.objects
+        .filter(o => o.path.startsWith('/table/'))
+        .map(o => ({ name: o.path.replace('/table/', '') })),
+      views: dbObjects.objects
+        .filter(o => o.path.startsWith('/view/'))
+        .map(o => ({ name: o.path.replace('/view/', '') })),
+      procedures: dbObjects.objects
+        .filter(o => o.path.startsWith('/proc/'))
+        .map(o => ({ name: o.path.replace('/proc/', '') }))
+    };
+
+    res.json(schema);
+  } catch (error) {
+    logger.error('Error fetching schema:', error);
+    res.status(500).json({ message: 'Failed to fetch schema' });
+  }
+});
 
 // Get all services
 router.get('/', async (req, res, next) => {
@@ -19,8 +129,8 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// Test connection handler with enhanced logging
-const testConnection = async (req, res, next) => {
+// Test connection handler
+const testConnection = async (req, res) => {
   try {
     console.log('\n=== Starting Service Test Connection ===');
     console.log('Request body:', {
@@ -40,45 +150,54 @@ const testConnection = async (req, res, next) => {
       });
     }
 
-    // Decrypt password if needed
+    // Handle password
     let password = req.body.password;
-    if (password.includes(':')) {
-      try {
-        console.log('Attempting to decrypt password...');
-        password = decryptDatabasePassword(password);
-        console.log('Password decrypted successfully');
-      } catch (decryptError) {
-        console.error('Password decryption failed:', decryptError);
-        return res.status(500).json({
-          success: false,
-          error: 'Password decryption failed'
-        });
-      }
+    try {
+      // Always try to decrypt, the decrypt function will handle both encrypted and unencrypted passwords
+      password = decryptDatabasePassword(password);
+      console.log('Password processed successfully');
+    } catch (error) {
+      console.error('Password processing error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to process password'
+      });
     }
 
-    const connectionData = {
-      ...req.body,
-      password
+    // Test the connection
+    const config = {
+      user: req.body.username,
+      password: password,
+      server: req.body.host,
+      port: parseInt(req.body.port),
+      database: req.body.database,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true,
+        connectTimeout: 30000
+      }
     };
 
     console.log('Testing connection with:', {
-      host: connectionData.host,
-      port: connectionData.port,
-      database: connectionData.database,
-      username: connectionData.username
+      ...config,
+      password: '[REDACTED]'
     });
 
-    const result = await databaseService.testConnection(connectionData);
-    
-    if (!result.success) {
-      console.error('Connection test failed:', result.error);
-      return res.status(500).json(result);
-    }
-    
-    res.json(result);
+    const pool = await sql.connect(config);
+    await pool.request().query('SELECT 1');
+    await pool.close();
+
+    res.json({ 
+      success: true,
+      message: 'Connection successful'
+    });
+
   } catch (error) {
-    console.error('Test connection handler error:', error);
-    next(error);
+    console.error('Test connection error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 

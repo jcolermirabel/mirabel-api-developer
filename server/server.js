@@ -74,6 +74,7 @@ app.use('/api/services', persistentAuth, servicesRouter);
 app.use('/api/reports', persistentAuth, require('./routes/reports'));
 app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
 app.use('/api/documentation', persistentAuth, documentationRouter);
+app.use('/api', require('./routes/api'));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

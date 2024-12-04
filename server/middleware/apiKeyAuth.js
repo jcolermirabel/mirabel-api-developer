@@ -1,5 +1,6 @@
 const Application = require('../models/Application');
 const Service = require('../models/Service');
+const Role = require('../models/Role');
 
 const apiKeyAuth = async (req, res, next) => {
   try {
@@ -24,27 +25,10 @@ const apiKeyAuth = async (req, res, next) => {
     const serviceIndex = pathParts.indexOf('v2');
     const serviceName = serviceIndex >= 0 ? pathParts[serviceIndex + 1] : null;
 
-    console.log('Service lookup:', {
-      pathParts,
-      serviceIndex,
-      serviceName,
-      fullPath: req.path
-    });
-
-    // Find service with detailed logging
+    // Find service
     const service = await Service.findOne({ 
       name: serviceName,
       isActive: true
-    });
-
-    console.log('Service query result:', {
-      searched: serviceName,
-      found: !!service,
-      serviceDetails: service ? {
-        id: service._id,
-        name: service.name,
-        isActive: service.isActive
-      } : null
     });
 
     if (!service) {
@@ -54,9 +38,27 @@ const apiKeyAuth = async (req, res, next) => {
       });
     }
 
-    // Add both application and service to request
+    // Find role with permission for this endpoint
+    const procedureName = req.params.procedureName;
+    const objectName = `/proc/dbo.${procedureName}`;
+
+    const role = await Role.findOne({
+      'permissions.serviceId': service._id,
+      'permissions.objectName': objectName,
+      isActive: true
+    });
+
+    if (!role) {
+      return res.status(403).json({ 
+        message: 'Access denied - Role does not have permission for this endpoint',
+        endpoint: objectName
+      });
+    }
+
+    // Add application and service to request
     req.application = application;
     req.service = service;
+    req.role = role;
     next();
   } catch (error) {
     console.error('API key validation error:', error);

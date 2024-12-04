@@ -6,12 +6,9 @@ const decryptDatabasePassword = (encryptedPassword) => {
   try {
     const [encryptedHex, ivHex] = encryptedPassword.split(':');
     
-    console.log('Backend decryption attempt:', {
-      encryptionKey: process.env.ENCRYPTION_KEY?.length,
-      keyBuffer: Buffer.from(process.env.ENCRYPTION_KEY, 'hex').length,
-      ivLength: Buffer.from(ivHex, 'hex').length,
-      encryptedLength: Buffer.from(encryptedHex, 'hex').length
-    });
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY environment variable is not set');
+    }
 
     const iv = Buffer.from(ivHex, 'hex');
     const encrypted = Buffer.from(encryptedHex, 'hex');
@@ -27,13 +24,17 @@ const decryptDatabasePassword = (encryptedPassword) => {
     
     return decrypted.toString();
   } catch (error) {
-    console.error('Decryption error details:', error);
-    throw new Error('Failed to decrypt password');
+    console.error('Decryption error:', error.message);
+    throw new Error('Failed to decrypt password: ' + error.message);
   }
 };
 
 const encryptDatabasePassword = (password) => {
   try {
+    if (!process.env.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY environment variable is not set');
+    }
+
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(
       'aes-256-cbc',
@@ -46,8 +47,8 @@ const encryptDatabasePassword = (password) => {
     
     return encrypted.toString('hex') + ':' + iv.toString('hex');
   } catch (error) {
-    console.error('Encryption error:', error);
-    throw new Error('Failed to encrypt password');
+    console.error('Encryption error:', error.message);
+    throw new Error('Failed to encrypt password: ' + error.message);
   }
 };
 

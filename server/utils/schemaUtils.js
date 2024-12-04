@@ -7,12 +7,14 @@ async function fetchSchemaFromDatabase(service) {
       user: service.username,
       password: service.password,
       server: service.host,
+      port: service.port,
       database: service.database,
       options: {
         encrypt: false,
         trustServerCertificate: true,
-        connectTimeout: 30000,
-        requestTimeout: 30000
+        connectionTimeout: 30000,
+        requestTimeout: 30000,
+        enableArithAbort: true
       }
     };
 

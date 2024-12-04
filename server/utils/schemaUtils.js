@@ -10,8 +10,11 @@ async function fetchSchemaFromDatabase(service) {
       port: service.port,
       database: service.database,
       options: {
-        encrypt: false,
+        encrypt: true,
         trustServerCertificate: true,
+        cryptoCredentialsDetails: {
+          minVersion: 'TLSv1'
+        },
         connectionTimeout: 30000,
         requestTimeout: 30000,
         enableArithAbort: true

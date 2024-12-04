@@ -12,7 +12,7 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
       params: req.params,
       query: req.query,
       headers: {
-        'x-mirabel-api-key': req.headers['x-mirabel-api-key'] ? 'present' : 'missing',
+        'x-mirabel-api': req.headers['x-mirabel-api'] ? 'present' : 'missing',
         'accept': req.headers['accept']
       }
     });

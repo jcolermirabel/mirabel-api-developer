@@ -81,7 +81,7 @@ const ServiceList = () => {
 
   const handleToggleActive = async (service) => {
     try {
-      await updateService(service._id, { ...service, isActive: !service.isActive });
+      await updateService(service._id, { isActive: !service.isActive });
       await fetchServices();
     } catch (err) {
       setError('Failed to update service status');

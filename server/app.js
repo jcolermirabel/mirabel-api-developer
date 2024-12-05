@@ -1,11 +1,13 @@
 const express = require('express');
 const app = express();
 const apiRoutes = require('./routes/api');
+const servicesRouter = require('./routes/services');
 
 // Other middleware and configurations...
 
 // Mount the API routes at /api
 app.use('/api', apiRoutes);
+app.use('/api/services', servicesRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

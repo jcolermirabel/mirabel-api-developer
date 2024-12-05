@@ -342,4 +342,23 @@ router.get('/:serviceId/objects', async (req, res) => {
   }
  });
 
+router.put('/:id', authMiddleware, async (req, res) => {
+  try {
+    const service = await Service.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    
+    res.json(service);
+  } catch (error) {
+    console.error('Error updating service:', error);
+    res.status(500).json({ message: 'Error updating service' });
+  }
+});
+
 module.exports = router;

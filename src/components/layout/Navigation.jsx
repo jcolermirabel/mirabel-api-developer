@@ -80,7 +80,8 @@ const Navigation = () => {
       text: 'API Documentation',
       icon: <DocsIcon />,
       path: '/documentation',
-      permission: 'canViewDocs'
+      permission: 'canViewDocs',
+      hidden: true 
     },
     {
       text: 'API Usage Report',
@@ -120,7 +121,7 @@ const Navigation = () => {
       <Divider />
       <List>
         {menuItems.map((item) => (
-          permissions[item.permission] && (
+          !item.hidden && permissions[item.permission] && (
             <ListItemButton
               key={item.text}
               selected={location.pathname === item.path}

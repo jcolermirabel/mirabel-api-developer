@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { createService, testConnection, updateService } from '../../services/serviceService';
 
-const ServiceForm = ({ service, onServiceSubmitted, title }) => {
+const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
   const [formData, setFormData] = useState({
     name: service?.name || '',
     host: service?.host || '',
@@ -24,6 +24,7 @@ const ServiceForm = ({ service, onServiceSubmitted, title }) => {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +38,7 @@ const ServiceForm = ({ service, onServiceSubmitted, title }) => {
   };
 
   const handleTestConnection = async () => {
+    setTesting(true);
     try {
       const testConfig = {
         name: formData.name,
@@ -47,7 +49,6 @@ const ServiceForm = ({ service, onServiceSubmitted, title }) => {
         password: formData.password
       };
       
-      // Test the connection
       const response = await testConnection(testConfig);
       if (response.success) {
         setError('Connection successful!');
@@ -56,6 +57,8 @@ const ServiceForm = ({ service, onServiceSubmitted, title }) => {
       }
     } catch (error) {
       setError(error.message || 'Connection failed');
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -169,10 +172,16 @@ const ServiceForm = ({ service, onServiceSubmitted, title }) => {
       <DialogActions>
         <Button
           onClick={handleTestConnection}
-          disabled={saving}
-          startIcon={<CircularProgress size={20} />}
+          disabled={saving || testing}
+          startIcon={testing && <CircularProgress size={20} />}
         >
           Test Connection
+        </Button>
+        <Button
+          onClick={onCancel}
+          disabled={saving}
+        >
+          Cancel
         </Button>
         <Button
           type="submit"

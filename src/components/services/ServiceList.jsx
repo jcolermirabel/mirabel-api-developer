@@ -330,6 +330,10 @@ const ServiceList = () => {
             setEditService(null);
             fetchServices();
           }}
+          onCancel={() => {
+            setOpenForm(false);
+            setEditService(null);
+          }}
           title={editService ? "Edit Service" : "Add New Service"}
         />
       </Dialog>

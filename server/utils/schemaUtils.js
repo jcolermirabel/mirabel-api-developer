@@ -1,7 +1,7 @@
 const sql = require('mssql');
 const { logger } = require('./logger');
 
-async function fetchSchemaFromDatabase(service) {
+exports.fetchSchemaFromDatabase = async (service, options = {}) => {
   try {
     const config = {
       user: service.username,
@@ -72,8 +72,4 @@ async function fetchSchemaFromDatabase(service) {
       console.error('Error closing SQL connection:', err);
     }
   }
-}
-
-module.exports = {
-  fetchSchemaFromDatabase
 }; 

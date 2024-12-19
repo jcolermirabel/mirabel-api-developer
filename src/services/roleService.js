@@ -50,11 +50,11 @@ export const deleteRole = async (id) => {
 
 export const getServiceSchema = async (serviceId) => {
   try {
-    logApiCall('GET', `/api/services/${serviceId}/schema`);
-    const response = await api.get(`/api/services/${serviceId}/schema`);
+    const response = await api.get(`/api/roles/service/${serviceId}/schema`);
+    logApiCall('GET', `/api/roles/service/${serviceId}/schema`);
     return response.data;
   } catch (error) {
-    logApiCall('GET', `/api/services/${serviceId}/schema`, error);
+    logApiCall('GET', `/api/roles/service/${serviceId}/schema`, error);
     throw error;
   }
 }; 

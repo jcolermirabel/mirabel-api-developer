@@ -5,6 +5,7 @@ const { authMiddleware } = require('../middleware/auth'); // Import specifically
 const { fetchSchemaFromDatabase } = require('../utils/schemaUtils');
 const { logger } = require('../middleware/logger');
 const Service = require('../models/Service');
+const DatabaseObject = require('../models/DatabaseObject');
 
 // Apply auth middleware to all routes
 router.use(authMiddleware);
@@ -117,15 +118,58 @@ router.post('/:id/refresh-schema', async (req, res) => {
 });
 
 // Get service schema
-router.get('/:id/schema', async (req, res) => {
+router.get('/service/:id/schema', async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
+    console.log('Fetching database objects for service:', req.params.id);
+    
+    // Get the database objects document for this service
+    const dbObjects = await DatabaseObject.findOne({ 
+      serviceId: req.params.id 
+    }).lean();
+    
+    if (!dbObjects || !dbObjects.objects) {
+      console.log('No objects found for service');
+      return res.json({ tables: [], views: [], procedures: [] });
     }
-    res.json(service.schema);
+    
+    console.log(`Found ${dbObjects.objects.length} objects`);
+
+    // Transform the objects array into the expected schema format
+    const schema = {
+      tables: dbObjects.objects
+        .filter(obj => obj.path.startsWith('/table/'))
+        .map(t => ({ 
+          name: t.path.split('/').pop(), 
+          path: t.path 
+        })),
+      views: dbObjects.objects
+        .filter(obj => obj.path.startsWith('/view/'))
+        .map(v => ({ 
+          name: v.path.split('/').pop(), 
+          path: v.path 
+        })),
+      procedures: dbObjects.objects
+        .filter(obj => obj.path.startsWith('/proc/'))
+        .map(p => ({ 
+          name: p.path.split('/').pop(), 
+          path: p.path 
+        }))
+    };
+    
+    console.log('Schema object counts:', {
+      tables: schema.tables.length,
+      views: schema.views.length,
+      procedures: schema.procedures.length
+    });
+
+    res.json(schema);
+    
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch service schema' });
+    console.error('Route error:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch database objects',
+      error: error.message
+    });
   }
 });
 

@@ -43,4 +43,49 @@ router.get('/v2/:serviceName/_proc/:procedureName', async (req, res) => {
   }
 });
 
+// Update the test connection endpoint to test both hosts
+router.post('/services/test', async (req, res) => {
+  try {
+    const { host, failoverHost, port, database, username, password } = req.body;
+    
+    // Test primary host
+    try {
+      const primaryConfig = {
+        host,
+        port,
+        database,
+        username,
+        password
+      };
+      // Your existing connection test logic here
+      await testConnection(primaryConfig);
+      return res.json({ success: true, message: 'Primary connection successful' });
+    } catch (primaryError) {
+      // If primary fails and failover exists, test failover
+      if (failoverHost) {
+        try {
+          const failoverConfig = {
+            host: failoverHost,
+            port,
+            database,
+            username,
+            password
+          };
+          await testConnection(failoverConfig);
+          return res.json({ success: true, message: 'Failover connection successful' });
+        } catch (failoverError) {
+          return res.status(400).json({
+            error: 'Both connections failed',
+            primary: primaryError.message,
+            failover: failoverError.message
+          });
+        }
+      }
+      return res.status(400).json({ error: primaryError.message });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

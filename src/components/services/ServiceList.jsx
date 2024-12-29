@@ -249,6 +249,16 @@ const ServiceList = () => {
                 Active
               </TableCell>
               <TableCell 
+                sx={{ 
+                  backgroundColor: '#1e2a3b',
+                  color: 'white',
+                  width: '20%',
+                  borderBottom: 'none'
+                }}
+              >
+                Hosts
+              </TableCell>
+              <TableCell 
                 padding="checkbox"
                 sx={{ 
                   backgroundColor: '#1e2a3b',
@@ -288,6 +298,14 @@ const ServiceList = () => {
                     onChange={() => handleToggleActive(service)}
                     color="primary"
                   />
+                </TableCell>
+                <TableCell>
+                  {service.host}
+                  {service.failoverHost && (
+                    <Typography variant="caption" display="block" color="textSecondary">
+                      Failover: {service.failoverHost}
+                    </Typography>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex' }}>

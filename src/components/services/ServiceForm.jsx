@@ -15,6 +15,7 @@ const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
   const [formData, setFormData] = useState({
     name: service?.name || '',
     host: service?.host || '',
+    failoverHost: service?.failoverHost || '',
     port: service?.port || '',
     database: service?.database || '',
     username: service?.username || '',
@@ -120,6 +121,16 @@ const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
           required
           value={formData.host}
           onChange={handleChange}
+          helperText="Primary host address"
+        />
+        <TextField
+          margin="dense"
+          label="Failover Host"
+          name="failoverHost"
+          fullWidth
+          value={formData.failoverHost}
+          onChange={handleChange}
+          helperText="Optional backup host address"
         />
         <TextField
           margin="dense"

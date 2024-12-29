@@ -20,7 +20,10 @@ export const deleteService = async (id) => {
 };
 
 export const testConnection = async (connectionData) => {
-  const response = await api.post('/api/services/test', connectionData);
+  const response = await api.post('/api/services/test', {
+    ...connectionData,
+    failoverHost: connectionData.failoverHost
+  });
   return response.data;
 };
 

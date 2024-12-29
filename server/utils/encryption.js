@@ -52,7 +52,17 @@ const encryptDatabasePassword = (password) => {
   }
 };
 
+const generateApiKey = async () => {
+  return new Promise((resolve, reject) => {
+    crypto.randomBytes(32, (err, buffer) => {
+      if (err) reject(err);
+      resolve(buffer.toString('hex'));
+    });
+  });
+};
+
 module.exports = {
   encryptDatabasePassword,
-  decryptDatabasePassword
+  decryptDatabasePassword,
+  generateApiKey
 }; 

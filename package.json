@@ -45,7 +45,12 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
-    "test:apps": "node tests/applicationTest.js"
+    "test:apps": "node tests/applicationTest.js",
+    "pm2:start": "pm2 start server/ecosystem.config.js",
+    "pm2:restart": "pm2 restart all",
+    "pm2:stop": "pm2 stop all",
+    "pm2:delete": "pm2 delete all",
+    "deploy": "npm run build && npm run pm2:restart"
   },
   "eslintConfig": {
     "extends": [

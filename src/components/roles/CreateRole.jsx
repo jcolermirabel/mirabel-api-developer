@@ -67,7 +67,13 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
   useEffect(() => {
     if (existingRole) {
       console.log('Setting existing role:', existingRole);
-      setRole(existingRole);
+      setRole({
+        name: existingRole.name,
+        description: existingRole.description,
+        serviceId: existingRole.serviceId,
+        permissions: existingRole.permissions || [],
+        isActive: existingRole.isActive ?? true
+      });
       setSelectedService(existingRole.serviceId);
       if (existingRole.serviceId) {
         fetchServiceComponents(existingRole.serviceId);
@@ -131,11 +137,45 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (activeStep === 0 && !role.name) {
       setError('Please enter a role name');
       return;
     }
+    
+    if (mode === 'edit' && activeStep === 0) {
+      try {
+        console.log('Current role state before update:', role);
+        console.log('Existing role:', existingRole);
+        
+        // Only update if there are changes
+        if (role.name !== existingRole.name || role.description !== existingRole.description) {
+          const updatedRole = {
+            ...existingRole,
+            name: role.name,
+            description: role.description,
+            serviceId: existingRole.serviceId,
+            permissions: existingRole.permissions,
+            isActive: role.isActive
+          };
+          
+          console.log('Sending role update:', updatedRole);
+          const result = await updateRole(existingRole._id, updatedRole);
+          console.log('Role update response:', result);
+          
+          // Update local state with server response
+          setRole(prev => ({
+            ...prev,
+            ...result
+          }));
+        }
+      } catch (err) {
+        console.error('Error updating role:', err);
+        setError('Failed to update role');
+        return;
+      }
+    }
+    
     setActiveStep((prevStep) => prevStep + 1);
   };
 
@@ -145,17 +185,20 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
 
   const handleSubmit = async () => {
     try {
+      if (!role.name) {
+        setError('Role name is required');
+        return;
+      }
+
       const roleData = {
         name: role.name,
         description: role.description,
-        serviceId: selectedService,
-        permissions: role.permissions,
+        serviceId: selectedService || role.serviceId,
+        permissions: role.permissions || [],
         isActive: role.isActive
       };
 
       console.log('Submitting role with data:', roleData);
-      console.log('Current role state:', role);
-      console.log('Current permissions:', role.permissions);
 
       if (!roleData.serviceId) {
         setError('Service ID is required');
@@ -298,21 +341,39 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
     }
   };
 
+  const handleCancel = () => {
+    navigate('/roles');
+  };
+
   const renderBasicInfo = () => (
     <Box sx={{ p: 2 }}>
       <FormControl fullWidth sx={{ mb: 2 }}>
         <TextField
           label="Role Name"
-          value={role.name}
-          onChange={(e) => setRole({ ...role, name: e.target.value })}
+          value={role.name || ''}
+          onChange={(e) => {
+            const newName = e.target.value;
+            console.log('Updating role name from:', role.name, 'to:', newName);
+            setRole(prev => ({
+              ...prev,
+              name: newName
+            }));
+          }}
           required
         />
       </FormControl>
       <FormControl fullWidth sx={{ mb: 2 }}>
         <TextField
           label="Description"
-          value={role.description}
-          onChange={(e) => setRole({ ...role, description: e.target.value })}
+          value={role.description || ''}
+          onChange={(e) => {
+            const newDescription = e.target.value;
+            console.log('Updating role description from:', role.description, 'to:', newDescription);
+            setRole(prev => ({
+              ...prev,
+              description: newDescription
+            }));
+          }}
           multiline
           rows={3}
         />
@@ -506,6 +567,9 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
       {activeStep === 0 ? renderBasicInfo() : renderComponentPermissions()}
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1 }}>
+        <Button onClick={handleCancel}>
+          Cancel
+        </Button>
         {activeStep > 0 && (
           <Button onClick={handleBack}>
             Back

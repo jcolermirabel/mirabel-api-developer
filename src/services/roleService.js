@@ -34,8 +34,14 @@ export const createRole = async (roleData) => {
 
 export const updateRole = async (id, roleData) => {
   try {
-    console.log('Attempting to update role:', { id, data: roleData });
-    const response = await api.put(`/api/roles/${id}`, roleData);
+    console.log('Attempting to update role:', { id, roleData });
+    const response = await api.put(`/api/roles/${id}`, {
+      name: roleData.name,
+      description: roleData.description,
+      serviceId: roleData.serviceId,
+      permissions: roleData.permissions,
+      isActive: roleData.isActive
+    });
     console.log('Role update response:', response.data);
     return response.data;
   } catch (error) {

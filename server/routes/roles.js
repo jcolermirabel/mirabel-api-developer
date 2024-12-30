@@ -80,10 +80,18 @@ router.post('/', async (req, res) => {
 // Update role
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
+    console.log('Updating role with data:', req.body);
     const role = await Role.findById(req.params.id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
+
+    // Update the role fields
+    role.name = req.body.name;
+    role.description = req.body.description;
+    role.serviceId = req.body.serviceId;
+    role.permissions = req.body.permissions;
+    role.isActive = req.body.isActive;
 
     // Update permissions to remove dbo prefix
     if (role.permissions) {
@@ -93,11 +101,13 @@ router.put('/:id', authMiddleware, async (req, res) => {
         }
         return perm;
       });
-      await role.save();
     }
 
+    await role.save();
+    console.log('Role updated successfully:', role);
     res.json(role);
   } catch (error) {
+    console.error('Role update error:', error);
     res.status(500).json({ message: error.message });
   }
 });

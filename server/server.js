@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+const { logger } = require('./middleware/logger');
 
 // Debug environment variables
 console.log('Environment:', {
@@ -15,15 +18,10 @@ app.enable('trust proxy');
 app.set('trust proxy', 1);
 
 // Now import and configure middleware
-const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/database');
-const { authMiddleware } = require('./middleware/auth');
-const servicesRouter = require('./routes/services');
-const documentationRouter = require('./routes/documentation');
 const cookieParser = require('cookie-parser');
 const persistentAuth = require('./middleware/persistentAuth');
-const { consolidatedApiKeyMiddleware } = require('./middleware/consolidatedAuthMiddleware');
 
 // Security middleware
 app.use(helmet());
@@ -72,16 +70,25 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', persistentAuth, require('./routes/users'));
 app.use('/api/roles', persistentAuth, require('./routes/roles'));
 app.use('/api/applications', persistentAuth, require('./routes/applications'));
-app.use('/api/services', persistentAuth, servicesRouter);
+app.use('/api/services', persistentAuth, require('./routes/services'));
 app.use('/api/reports', persistentAuth, require('./routes/reports'));
 app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
-app.use('/api/documentation', persistentAuth, documentationRouter);
+app.use('/api/documentation', persistentAuth, require('./routes/documentation'));
 app.use('/api/imports', persistentAuth, require('./routes/imports'));
+app.use('/api/ai', persistentAuth, require('./routes/ai'));
 
 // API key protected routes
-const apiRouter = require('./routes/api');
-apiRouter.use(consolidatedApiKeyMiddleware);
-app.use('/api/v2', apiRouter);
+app.use('/api', require('./routes/api'));
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 
+app.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+}); 

@@ -78,16 +78,27 @@ router.post('/', async (req, res) => {
 });
 
 // Update role
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const role = await Role.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body },
-      { new: true }
-    );
+    const role = await Role.findById(req.params.id);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    // Update permissions to remove dbo prefix
+    if (role.permissions) {
+      role.permissions = role.permissions.map(perm => {
+        if (perm.objectName && perm.objectName.startsWith('/proc/dbo.')) {
+          perm.objectName = perm.objectName.replace('/proc/dbo.', '/proc/');
+        }
+        return perm;
+      });
+      await role.save();
+    }
+
     res.json(role);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to update role' });
+    res.status(500).json({ message: error.message });
   }
 });
 

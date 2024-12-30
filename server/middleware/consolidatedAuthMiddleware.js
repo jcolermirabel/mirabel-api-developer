@@ -42,16 +42,14 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
     }
 
     // 3. Parse URL for service and procedure
-    // Parse URL for service and procedure
-    const pathParts = req.path.split('/').filter(Boolean);
-    if (pathParts.length < 3 || pathParts[0] !== 'v2' || pathParts[2] !== '_proc') {
+    const serviceName = req.params.serviceName;
+    const procedureName = req.params.procedureName;
+
+    if (!serviceName || !procedureName) {
       throw new AuthenticationError('Invalid API URL format', 400, {
         expectedFormat: '/api/v2/{service}/_proc/{procedure}'
       });
     }
-
-    const serviceName = pathParts[1];
-    const procedureName = pathParts[3];
 
     // 4. Find and validate service
     const service = await Service.findOne({ 
@@ -67,17 +65,17 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
 
     // 5. Validate procedure permission
     // Check if the role has permission for this procedure and service
-    const fullProcedureName = `/proc/dbo.${procedureName}`;
     const hasPermission = application.defaultRole.permissions.some(perm => 
       perm.serviceId.toString() === service._id.toString() && // Match service
-      perm.objectName === fullProcedureName && // Match full procedure name
+      (perm.objectName === procedureName || // Match procedure name directly
+       perm.objectName === `/proc/${procedureName}`) && // Match with /proc/ prefix
       perm.actions && 
       perm.actions[req.method] // Check method permission
     );
 
     if (!hasPermission) {
       throw new AuthenticationError('Insufficient permissions', 403, {
-        procedure: fullProcedureName,
+        procedure: procedureName,
         service: serviceName,
         method: req.method
       });

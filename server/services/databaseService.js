@@ -93,7 +93,6 @@ class DatabaseService {
         JOIN sys.schemas s ON o.schema_id = s.schema_id
         WHERE o.type IN ('U', 'V', 'P', 'PC')
           AND o.is_ms_shipped = 0
-          AND s.name = 'dbo'
         ORDER BY o.type_desc, o.name;
       `);
 

@@ -51,11 +51,11 @@ exports.fetchSchemaFromDatabase = async (service, options = {}) => {
     return {
       tables: tables.recordset.map(t => ({ 
         name: t.name,
-        path: `/table/${t.schema_name}.${t.name}`
+        path: `/table/${t.name}`
       })),
       views: views.recordset.map(v => ({ 
         name: v.name,
-        path: `/view/${v.schema_name}.${v.name}`
+        path: `/view/${v.name}`
       })),
       procedures: procedures.recordset.map(p => ({ 
         name: p.name,

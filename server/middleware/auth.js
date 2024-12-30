@@ -22,36 +22,19 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const authenticateApiKey = async (req, res, next) => {
+const isAdmin = (req, res, next) => {
   try {
-    // ... existing API key validation ...
-    
-    const service = await Service.findById(application.service);
-    if (!service) {
-      return res.status(404).json({ error: 'Service not found' });
+    if (!req.user || !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Admin access required' });
     }
-
-    // Get the effective host using the failover logic
-    try {
-      const effectiveHost = await service.getEffectiveHost();
-      
-      // Add the effective host to the request for use in the route handlers
-      req.effectiveHost = effectiveHost;
-      req.service = {
-        ...service.toObject(),
-        host: effectiveHost // Override the host with the effective one
-      };
-      
-      next();
-    } catch (error) {
-      return res.status(503).json({ 
-        error: 'Service unavailable', 
-        details: error.message 
-      });
-    }
+    next();
   } catch (error) {
-    return res.status(401).json({ error: 'Authentication failed' });
+    console.error('Admin check error:', error);
+    res.status(500).json({ message: 'Error checking admin status' });
   }
 };
 
-module.exports = { authMiddleware, authenticateApiKey }; 
+module.exports = { 
+  authMiddleware,
+  isAdmin
+}; 

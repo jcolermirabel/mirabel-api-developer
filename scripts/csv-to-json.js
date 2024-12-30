@@ -1,62 +1,52 @@
 const fs = require('fs');
-const csv = require('csv-parse');
 const path = require('path');
-const { encryptDatabasePassword } = require('../server/utils/encryption');
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { parse } = require('csv-parse/sync');
 
-if (!process.env.ENCRYPTION_KEY) {
-  console.error('Error: ENCRYPTION_KEY environment variable is not set');
-  process.exit(1);
-}
-
+// Check if file path is provided
 if (process.argv.length < 3) {
-  console.error('Usage: node csv-to-json.js <path-to-csv-file>');
+  console.error('Please provide a CSV file path');
   process.exit(1);
 }
 
 const csvFilePath = process.argv[2];
 
-const parser = csv.parse({
-  columns: true,
-  skip_empty_lines: true,
-  trim: true
-});
+try {
+  // Read and parse CSV file
+  const csvContent = fs.readFileSync(csvFilePath, 'utf-8');
+  const records = parse(csvContent, {
+    columns: true,
+    skip_empty_lines: true
+  });
 
-const databases = [];
+  // Transform records into the required format
+  const databases = records.map(record => ({
+    name: record.database_name,
+    host: record.host,
+    failoverHost: record.failover_host,
+    port: parseInt(record.port),
+    username: record.username,
+    password: record.password,
+    component: record.component,
+    actions: record.actions.split(',').map(action => action.trim())
+  }));
 
-fs.createReadStream(csvFilePath)
-  .pipe(parser)
-  .on('data', async (row) => {
-    try {
-      const encryptedPassword = encryptDatabasePassword(row.password);
-      databases.push({
-        name: row.database_name,
-        host: row.host,
-        failoverHost: row.failover_host || null,
-        port: parseInt(row.port, 10),
-        username: row.username,
-        password: encryptedPassword,
-        components: row.components.split(',').map(comp => comp.trim())
-      });
-    } catch (error) {
-      console.error(`Error processing row for database ${row.database_name}:`, error.message);
-      process.exit(1);
-    }
-  })
-  .on('end', () => {
-    const output = { databases };
-    const outputPath = path.join(
-      path.dirname(csvFilePath),
-      `${path.basename(csvFilePath, '.csv')}_import.json`
-    );
-    
-    fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
-    console.log(`Conversion complete! Output saved to: ${outputPath}`);
-    console.log(`Found ${databases.length} databases with a total of ${
-      databases.reduce((sum, db) => sum + db.components.length, 0)
-    } components.`);
-  })
-  .on('error', (error) => {
-    console.error('Error processing CSV:', error.message);
-    process.exit(1);
-  }); 
+  // Create output object
+  const output = {
+    databases
+  };
+
+  // Write to JSON file
+  const outputPath = path.join(
+    path.dirname(csvFilePath),
+    path.basename(csvFilePath, '.csv') + '_import.json'
+  );
+  
+  fs.writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  
+  console.log(`Processed ${databases.length} database entries`);
+  console.log(`Output written to ${outputPath}`);
+
+} catch (error) {
+  console.error('Error processing CSV:', error.message);
+  process.exit(1);
+} 

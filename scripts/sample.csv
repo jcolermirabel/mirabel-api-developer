@@ -1,4 +1,9 @@
-database_name,host,failover_host,port,username,password,components
-DB_Sales,sqlserver1.example.com,sqlserver1-failover.example.com,1433,admin,mypassword123,sp_GetSales,sp_UpdateInventory,sp_GenerateReport
-DB_HR,sqlserver2.example.com,sqlserver2-failover.example.com,1433,admin,mypassword456,sp_GetEmployees,sp_UpdatePayroll
-DB_Marketing,sqlserver3.example.com,sqlserver3-failover.example.com,1433,admin,mypassword789,sp_GetCampaigns,sp_UpdateLeads,sp_GenerateMetrics 
+database_name,host,failover_host,port,username,password,component,actions
+DB_Sales,sqlserver1.example.com,sqlserver1-failover.example.com,1433,admin,mypassword123,sp_GetSales,GET
+DB_Sales,sqlserver1.example.com,sqlserver1-failover.example.com,1433,admin,mypassword123,sp_UpdateInventory,"GET,POST,PUT"
+DB_Sales,sqlserver1.example.com,sqlserver1-failover.example.com,1433,admin,mypassword123,sp_GenerateReport,"GET,POST"
+DB_HR,sqlserver2.example.com,sqlserver2-failover.example.com,1433,admin,mypassword456,sp_GetEmployees,GET
+DB_HR,sqlserver2.example.com,sqlserver2-failover.example.com,1433,admin,mypassword456,sp_UpdatePayroll,"GET,POST,PUT,DELETE"
+DB_Marketing,sqlserver3.example.com,sqlserver3-failover.example.com,1433,admin,mypassword789,sp_GetCampaigns,GET
+DB_Marketing,sqlserver3.example.com,sqlserver3-failover.example.com,1433,admin,mypassword789,sp_UpdateLeads,"GET,POST,PUT"
+DB_Marketing,sqlserver3.example.com,sqlserver3-failover.example.com,1433,admin,mypassword789,sp_GenerateMetrics,"GET,POST" 

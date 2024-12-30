@@ -42,10 +42,16 @@ const ServiceList = () => {
   const fetchServices = async () => {
     try {
       const data = await getServices();
-      setServices(data);
+      const validServices = data.filter(service => 
+        service && 
+        service._id && 
+        !selectedItems.has(service._id)
+      );
+      setServices(validServices);
       setError('');
     } catch (err) {
       setError('Failed to fetch services');
+      console.error('Fetch services error:', err);
     } finally {
       setLoading(false);
     }
@@ -57,12 +63,22 @@ const ServiceList = () => {
 
   const handleDelete = async (serviceId) => {
     try {
-      await deleteService(serviceId);
-      await fetchServices();
+      const result = await deleteService(serviceId);
+      if (result.success) {
+        setServices(prevServices => prevServices.filter(service => service._id !== serviceId));
+        setError('');
+        setSuccess(result.message || 'Service removed successfully');
+      }
     } catch (err) {
-      setError('Failed to delete service');
+      const errorMessage = err.message || 'Failed to delete service';
+      setError(errorMessage);
+    } finally {
+      setConfirmDelete({ open: false, serviceId: null });
+      
+      if (success) {
+        setTimeout(() => setSuccess(''), 3000);
+      }
     }
-    setConfirmDelete({ open: false, serviceId: null });
   };
 
   const handleEdit = (service) => {
@@ -361,7 +377,10 @@ const ServiceList = () => {
         title="Delete Service"
         message="Are you sure you want to delete this service? This action cannot be undone."
         onConfirm={() => handleDelete(confirmDelete.serviceId)}
-        onCancel={() => setConfirmDelete({ open: false, serviceId: null })}
+        onCancel={() => {
+          setConfirmDelete({ open: false, serviceId: null });
+        }}
+        aria-modal="true"
       />
     </Box>
   );

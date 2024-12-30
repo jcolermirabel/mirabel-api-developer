@@ -15,8 +15,40 @@ export const getServices = async () => {
   return response.data;
 };
 
+export const getService = async (id) => {
+  const response = await api.get(`/api/services/${id}`);
+  return response.data;
+};
+
 export const deleteService = async (id) => {
-  await api.delete(`/api/services/${id}`);
+  try {
+    try {
+      await getService(id);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        return { 
+          success: true, 
+          message: 'Service already removed',
+          deletedId: id
+        };
+      }
+      throw err;
+    }
+    
+    const response = await api.delete(`/api/services/${id}`);
+    return { 
+      ...response.data, 
+      success: true,
+      deletedId: id
+    };
+  } catch (error) {
+    console.error('Delete operation failed:', {
+      id,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message
+    });
+    throw error;
+  }
 };
 
 export const testConnection = async (connectionData) => {

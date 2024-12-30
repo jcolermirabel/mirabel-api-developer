@@ -5,19 +5,68 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { logger } = require('../utils/logger');
 
+// Register
+router.post('/register', async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, isAdmin } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Create new user
+    const user = new User({
+      email,
+      password,  // Will be hashed by the model's pre-save middleware
+      firstName,
+      lastName,
+      isAdmin: isAdmin || false,
+      isActive: true
+    });
+
+    await user.save();
+
+    // Generate token
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        isAdmin: user.isAdmin
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Error registering user', error: error.message });
+  }
+});
+
 // Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
-  // Generate hash early
-  const hashedPassword = await bcrypt.hash(password, 10);
-  
   console.log('=== Login Request ===');
   console.log('Headers:', req.headers);
-  console.log('Body:', { 
-    email: email, 
-    password: hashedPassword // Show hashed value
-  });
+  console.log('Body:', { email });
   console.log('Looking for user with email:', email);
   
   try {
@@ -42,11 +91,13 @@ router.post('/login', async (req, res) => {
     }
 
     console.log('Password matched, generating token');
-    // Generate CSRF token
-    const csrfToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        isAdmin: user.isAdmin
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     const userData = {
@@ -59,32 +110,8 @@ router.post('/login', async (req, res) => {
       lastLogin: new Date()
     };
 
-    // Set session if available
-    if (req.session) {
-      req.session.user = userData;
-      
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-        }
-      });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '7d'  // Token expires in 7 days
-    });
-
-    // Set token as HTTP-only cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
-    });
-
-    // Send response regardless of session status
     res.json({
-      token: csrfToken,
+      token,
       user: userData
     });
   } catch (error) {

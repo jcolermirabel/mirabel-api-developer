@@ -19,11 +19,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/database');
 const { authMiddleware } = require('./middleware/auth');
-//const apiKeyAuth = require('./middleware/apiKeyAuth');
 const servicesRouter = require('./routes/services');
 const documentationRouter = require('./routes/documentation');
 const cookieParser = require('cookie-parser');
 const persistentAuth = require('./middleware/persistentAuth');
+const { consolidatedApiKeyMiddleware } = require('./middleware/consolidatedAuthMiddleware');
 
 // Security middleware
 app.use(helmet());
@@ -65,8 +65,10 @@ mongoose.connection.on('error', (err) => {
   });
 });
 
-// Routes
+// Public routes (no auth required)
 app.use('/api/auth', require('./routes/auth'));
+
+// JWT protected routes (require login)
 app.use('/api/users', persistentAuth, require('./routes/users'));
 app.use('/api/roles', persistentAuth, require('./routes/roles'));
 app.use('/api/applications', persistentAuth, require('./routes/applications'));
@@ -74,7 +76,12 @@ app.use('/api/services', persistentAuth, servicesRouter);
 app.use('/api/reports', persistentAuth, require('./routes/reports'));
 app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
 app.use('/api/documentation', persistentAuth, documentationRouter);
-app.use('/api', require('./routes/api'));
+app.use('/api/imports', persistentAuth, require('./routes/imports'));
+
+// API key protected routes
+const apiRouter = require('./routes/api');
+apiRouter.use(consolidatedApiKeyMiddleware);
+app.use('/api/v2', apiRouter);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`)); 

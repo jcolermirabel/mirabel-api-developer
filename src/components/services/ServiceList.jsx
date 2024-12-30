@@ -319,7 +319,7 @@ const ServiceList = () => {
                   {service.host}
                   {service.failoverHost && (
                     <Typography variant="caption" display="block" color="textSecondary">
-                      Failover: {service.failoverHost}
+                      Mirror: {service.failoverHost}
                     </Typography>
                   )}
                 </TableCell>

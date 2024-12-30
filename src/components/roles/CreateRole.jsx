@@ -204,10 +204,14 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
       const selectedComponent = sortedComponents.find(c => c.path === selectedValue);
       console.log('Found component:', selectedComponent);
 
+      // Strip out schema prefix if present
+      const cleanedPath = selectedValue.replace(/\/proc\/[^.]+\./, '/proc/');
+
       setNewComponent(prev => {
         const updated = {
           ...prev,
-          objectName: selectedValue
+          objectName: cleanedPath,
+          originalPath: selectedValue  // Store the original path for display
         };
         console.log('Updated component state:', updated);
         return updated;
@@ -359,7 +363,7 @@ const CreateRole = ({ mode = 'create', existingRole = null }) => {
           <FormControl sx={{ minWidth: 200 }}>
             <InputLabel>Component</InputLabel>
             <Select
-              value={newComponent.objectName || ''}
+              value={newComponent.originalPath || ''}
               onChange={(e) => handleComponentSelect(e.target.value)}
               label="Component"
               disabled={!newComponent.serviceId || loading}

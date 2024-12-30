@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -28,6 +28,7 @@ import ExportMenu from '../common/ExportMenu';
 import { useSelection } from '../../context/SelectionContext';
 import BulkActions from '../common/BulkActions';
 import { getUsers } from '../../services/userService';
+import { useNotification } from '../../context/NotificationContext';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -37,8 +38,9 @@ const UserList = () => {
   const [editUser, setEditUser] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, userId: null });
   const { selectedItems, toggleSelection } = useSelection();
+  const { showNotification } = useNotification();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const data = await getUsers();
       setUsers(data);
@@ -48,16 +50,17 @@ const UserList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleDelete = async (userId) => {
     try {
       await deleteUser(userId);
-      await fetchUsers();
+      setUsers(prevUsers => prevUsers.filter(user => user._id !== userId));
+      showNotification('User deleted successfully', 'success');
     } catch (err) {
       setError('Failed to delete user');
     }
@@ -95,7 +98,8 @@ const UserList = () => {
       await Promise.all(
         Array.from(selectedItems).map(id => deleteUser(id))
       );
-      await fetchUsers();
+      setUsers(prevUsers => prevUsers.filter(user => !selectedItems.has(user._id)));
+      showNotification('Selected users deleted successfully', 'success');
     } catch (err) {
       setError('Failed to delete selected users');
     }

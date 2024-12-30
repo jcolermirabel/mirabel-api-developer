@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -25,6 +25,7 @@ import ExportMenu from '../common/ExportMenu';
 import { useSelection } from '../../context/SelectionContext';
 import BulkActions from '../common/BulkActions';
 import Switch from '@mui/material/Switch';
+import { useNotification } from '../../context/NotificationContext';
 
 const RoleList = () => {
   const navigate = useNavigate();
@@ -33,8 +34,9 @@ const RoleList = () => {
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState({ open: false, roleId: null });
   const { selectedItems, toggleSelection } = useSelection();
+  const { showNotification } = useNotification();
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getRoles();
@@ -46,18 +48,19 @@ const RoleList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
     fetchRoles();
     return () => abortController.abort();
-  }, []);
+  }, [fetchRoles]);
 
   const handleDelete = async (roleId) => {
     try {
       await deleteRole(roleId);
-      await fetchRoles();
+      setRoles(prevRoles => prevRoles.filter(role => role._id !== roleId));
+      showNotification('Role deleted successfully', 'success');
     } catch (err) {
       setError('Failed to delete role');
     }
@@ -69,7 +72,8 @@ const RoleList = () => {
       await Promise.all(
         Array.from(selectedItems).map(id => deleteRole(id))
       );
-      await fetchRoles();
+      setRoles(prevRoles => prevRoles.filter(role => !selectedItems.has(role._id)));
+      showNotification('Selected roles deleted successfully', 'success');
     } catch (err) {
       setError('Failed to delete selected roles');
     }

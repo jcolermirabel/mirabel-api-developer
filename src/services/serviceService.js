@@ -22,19 +22,6 @@ export const getService = async (id) => {
 
 export const deleteService = async (id) => {
   try {
-    try {
-      await getService(id);
-    } catch (err) {
-      if (err.response?.status === 404) {
-        return { 
-          success: true, 
-          message: 'Service already removed',
-          deletedId: id
-        };
-      }
-      throw err;
-    }
-    
     const response = await api.delete(`/api/services/${id}`);
     return { 
       ...response.data, 
@@ -42,6 +29,13 @@ export const deleteService = async (id) => {
       deletedId: id
     };
   } catch (error) {
+    if (error.response?.status === 404) {
+      return { 
+        success: true, 
+        message: 'Service already removed',
+        deletedId: id
+      };
+    }
     console.error('Delete operation failed:', {
       id,
       status: error.response?.status,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -27,6 +27,7 @@ import TableCell from '@mui/material/TableCell';import TableHead from '@mui/mate
 import TableRow from '@mui/material/TableRow';
 import Checkbox from '@mui/material/Checkbox';
 import { useSelection } from '../../context/SelectionContext';
+import { useNotification } from '../../context/NotificationContext';
 
 const ServiceList = () => {
   const [services, setServices] = useState([]);
@@ -38,16 +39,12 @@ const ServiceList = () => {
   const [confirmDelete, setConfirmDelete] = useState({ open: false, serviceId: null });
   const navigate = useNavigate();
   const { selectedItems, toggleSelection } = useSelection();
+  const { showNotification } = useNotification();
 
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     try {
       const data = await getServices();
-      const validServices = data.filter(service => 
-        service && 
-        service._id && 
-        !selectedItems.has(service._id)
-      );
-      setServices(validServices);
+      setServices(data);
       setError('');
     } catch (err) {
       setError('Failed to fetch services');
@@ -55,29 +52,23 @@ const ServiceList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchServices();
-  }, []);
+  }, [fetchServices]);
 
   const handleDelete = async (serviceId) => {
     try {
       const result = await deleteService(serviceId);
       if (result.success) {
         setServices(prevServices => prevServices.filter(service => service._id !== serviceId));
-        setError('');
-        setSuccess(result.message || 'Service removed successfully');
+        showNotification('Service deleted successfully', 'success');
       }
     } catch (err) {
-      const errorMessage = err.message || 'Failed to delete service';
-      setError(errorMessage);
+      setError('Failed to delete service');
     } finally {
       setConfirmDelete({ open: false, serviceId: null });
-      
-      if (success) {
-        setTimeout(() => setSuccess(''), 3000);
-      }
     }
   };
 
@@ -98,7 +89,14 @@ const ServiceList = () => {
   const handleToggleActive = async (service) => {
     try {
       await updateService(service._id, { isActive: !service.isActive });
-      await fetchServices();
+      setServices(prevServices => 
+        prevServices.map(s => 
+          s._id === service._id 
+            ? { ...s, isActive: !service.isActive }
+            : s
+        )
+      );
+      showNotification('Service status updated successfully', 'success');
     } catch (err) {
       setError('Failed to update service status');
     }

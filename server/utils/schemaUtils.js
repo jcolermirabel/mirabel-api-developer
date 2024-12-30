@@ -59,7 +59,7 @@ exports.fetchSchemaFromDatabase = async (service, options = {}) => {
       })),
       procedures: procedures.recordset.map(p => ({ 
         name: p.name,
-        path: `/proc/${p.schema_name}.${p.name}`
+        path: `/proc/${p.name}`
       }))
     };
   } catch (error) {

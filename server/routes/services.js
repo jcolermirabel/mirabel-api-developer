@@ -2,29 +2,47 @@ const express = require('express');
 const router = express.Router();
 const Service = require('../models/Service');
 const databaseService = require('../services/databaseService');
-const { encryptDatabasePassword } = require('../utils/encryption');
+const { encryptDatabasePassword, decryptDatabasePassword } = require('../utils/encryption');
 const { logger } = require('../utils/logger');
 const DatabaseObject = require('../models/DatabaseObject');
 const { authMiddleware } = require('../middleware/auth');
+const { fetchDatabaseObjects, updateDatabaseObjects } = require('../utils/schemaUtils');
 
 router.use(authMiddleware);
 
 router.post('/', async (req, res) => {
- try {
-   const encryptedPassword = encryptDatabasePassword(req.body.password);
-   const service = new Service({
-     ...req.body,
-     password: encryptedPassword,
-     createdBy: req.user.userId
-   });
+  try {
+    const encryptedPassword = encryptDatabasePassword(req.body.password);
+    const service = new Service({
+      ...req.body,
+      password: encryptedPassword,
+      createdBy: req.user.userId
+    });
 
-   await databaseService.testConnection(service);
-   await service.save();
-   res.status(201).json(service);
- } catch (error) {
-   logger.error('Error creating service:', error);
-   res.status(500).json({ message: 'Failed to create service' });
- }
+    await databaseService.testConnection(service);
+    const savedService = await service.save();
+
+    // Fetch schema data after service creation
+    const config = {
+      user: service.username,
+      password: req.body.password, // Use unencrypted password
+      server: service.host,
+      port: service.port,
+      database: service.database,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true,
+      }
+    };
+
+    const dbObjects = await fetchDatabaseObjects(config);
+    await updateDatabaseObjects(savedService._id, dbObjects);
+
+    res.status(201).json(savedService);
+  } catch (error) {
+    logger.error('Error creating service:', error);
+    res.status(500).json({ message: 'Failed to create service' });
+  }
 });
 
 router.post('/test', async (req, res) => {
@@ -37,28 +55,44 @@ router.post('/test', async (req, res) => {
  }
 });
 
-router.post('/:id/refresh-schema', async (req, res) => {
- try {
-   const service = await Service.findById(req.params.id);
-   if (!service) {
-     return res.status(404).json({ message: 'Service not found' });
-   }
+router.post('/:id/refresh-schema', authMiddleware, async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
 
-   const objects = await databaseService.getDatabaseObjects(service);
-   res.json({ 
-     message: 'Schema refreshed successfully',
-     service: service.name,
-     objectCount: {
-       tables: objects.filter(o => o.object_category === 'TABLE').length,
-       views: objects.filter(o => o.object_category === 'VIEW').length,
-       procedures: objects.filter(o => o.object_category === 'PROCEDURE').length,
-       total: objects.length
-     }
-   });
- } catch (error) {
-   logger.error('Error refreshing schema:', error);
-   res.status(500).json({ message: 'Failed to refresh schema' });
- }
+    const decryptedPassword = decryptDatabasePassword(service.password);
+    
+    const config = {
+      user: service.username,
+      password: decryptedPassword,
+      server: service.host,
+      port: service.port,
+      database: service.database,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true,
+      }
+    };
+
+    const dbObjects = await fetchDatabaseObjects(config);
+    const result = await updateDatabaseObjects(service._id, dbObjects);
+
+    res.json({
+      serviceName: service.name,
+      totalObjects: result.totalObjects,
+      tables: result.tables,
+      views: result.views,
+      procedures: result.procedures
+    });
+  } catch (error) {
+    console.error('Schema refresh error:', error);
+    res.status(500).json({ 
+      message: 'Failed to refresh schema',
+      error: error.message 
+    });
+  }
 });
 
 router.get('/:serviceId/objects', async (req, res) => {
@@ -105,11 +139,16 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
+    // Delete the service
     const service = await Service.findByIdAndDelete(req.params.id);
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
     }
-    res.json({ message: 'Service deleted successfully' });
+
+    // Delete associated database objects
+    await DatabaseObject.deleteOne({ serviceId: req.params.id });
+
+    res.json({ message: 'Service and associated objects deleted successfully' });
   } catch (error) {
     logger.error('Error deleting service:', error);
     res.status(500).json({ message: 'Failed to delete service' });

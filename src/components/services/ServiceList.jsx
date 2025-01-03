@@ -8,6 +8,7 @@ import {
   Dialog,
   Alert,
   Switch,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -104,23 +105,43 @@ const ServiceList = () => {
 
   const handleRefreshSchema = async (serviceId) => {
     try {
-      console.log('Refreshing schema for service:', serviceId);
+      // Find the service being refreshed
+      const service = services.find(s => s._id === serviceId);
+      if (!service) return;
+
+      // Show loading state for just this service
+      setServices(prevServices => 
+        prevServices.map(s => 
+          s._id === serviceId 
+            ? { ...s, isRefreshing: true }
+            : s
+        )
+      );
+
       const result = await refreshServiceSchema(serviceId);
-      setError('');
-      setSuccess(`Schema refreshed for ${result.service}: ${result.objectCount.total} objects found (${result.objectCount.tables} tables, ${result.objectCount.views} views, ${result.objectCount.procedures} procedures)`);
+      
+      // Update success message
+      setSuccess(`Schema refreshed for ${service.name}: ${result.objectCount.total} objects found (${result.objectCount.tables} tables, ${result.objectCount.views} views, ${result.objectCount.procedures} procedures)`);
       
       setTimeout(() => {
         setSuccess('');
       }, 5000);
     } catch (err) {
       console.error('Schema refresh failed:', err);
-      setSuccess('');
       if (err.response?.status === 401) {
-        console.log('Authentication error, redirecting to login');
         navigate('/login');
       } else {
-        setError('Failed to refresh service schema');
+        setError('Failed to refresh service schema: ' + (err.response?.data?.message || err.message));
       }
+    } finally {
+      // Remove loading state for this service
+      setServices(prevServices => 
+        prevServices.map(s => 
+          s._id === serviceId 
+            ? { ...s, isRefreshing: false }
+            : s
+        )
+      );
     }
   };
 
@@ -335,8 +356,15 @@ const ServiceList = () => {
                     >
                       <DeleteIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleRefreshSchema(service._id)}>
-                      <RefreshIcon />
+                    <IconButton 
+                      onClick={() => handleRefreshSchema(service._id)}
+                      disabled={service.isRefreshing}
+                    >
+                      {service.isRefreshing ? (
+                        <CircularProgress size={24} />
+                      ) : (
+                        <RefreshIcon />
+                      )}
                     </IconButton>
                   </Box>
                 </TableCell>

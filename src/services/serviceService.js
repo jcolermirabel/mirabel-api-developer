@@ -55,5 +55,13 @@ export const testConnection = async (connectionData) => {
 
 export const refreshServiceSchema = async (id) => {
   const response = await api.post(`/api/services/${id}/refresh-schema`);
-  return response.data;
+  return {
+    service: response.data.serviceName,
+    objectCount: {
+      total: response.data.totalObjects,
+      tables: response.data.tables.length,
+      views: response.data.views.length,
+      procedures: response.data.procedures.length
+    }
+  };
 }; 

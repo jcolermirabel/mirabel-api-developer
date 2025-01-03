@@ -31,7 +31,7 @@ const ApiDocViewer = () => {
         const response = await axios.get(`${API_URL}/api/roles`, {
           headers: {
             'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-            'X-Mirabel-API': process.env.REACT_APP_API_KEY
+            'x-mirabel-api-key': process.env.REACT_APP_API_KEY
           }
         });
         setRoles(response.data);
@@ -56,7 +56,7 @@ const ApiDocViewer = () => {
       const response = await axios.get(`${API_URL}/api/documentation/role/${roleId}`, {
         headers: {
           'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-          'X-Mirabel-API': process.env.REACT_APP_API_KEY
+          'x-mirabel-api-key': process.env.REACT_APP_API_KEY
         }
       });
       setEndpoints(response.data.endpoints);
@@ -78,7 +78,7 @@ const ApiDocViewer = () => {
         {
           headers: {
             'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-            'X-Mirabel-API': process.env.REACT_APP_API_KEY
+            'x-mirabel-api-key': process.env.REACT_APP_API_KEY
           }
         }
       );
@@ -89,7 +89,7 @@ const ApiDocViewer = () => {
         {
           headers: {
             'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-            'X-Mirabel-API': process.env.REACT_APP_API_KEY
+            'x-mirabel-api-key': process.env.REACT_APP_API_KEY
           }
         }
       );

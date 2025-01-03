@@ -12,7 +12,7 @@ export const createDatabaseConnection = async (connectionData) => {
     }, {
       headers: {
         'Authorization': `Bearer ${getToken()}`,
-        'X-Mirabel-API': process.env.REACT_APP_API_KEY
+        'x-mirabel-api-key': process.env.REACT_APP_API_KEY
       }
     });
     
@@ -31,7 +31,7 @@ export const testConnection = async (connectionData) => {
     }, {
       headers: {
         'Authorization': `Bearer ${getToken()}`,
-        'X-Mirabel-API': process.env.REACT_APP_API_KEY
+        'x-mirabel-api-key': process.env.REACT_APP_API_KEY
       }
     });
     

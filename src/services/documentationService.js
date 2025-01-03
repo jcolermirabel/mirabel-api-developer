@@ -9,7 +9,7 @@ export const getRoleEndpoints = async (roleId) => {
       { 
         headers: {
           'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-          'X-Mirabel-API': process.env.REACT_APP_API_KEY
+          'x-mirabel-api-key': process.env.REACT_APP_API_KEY
         }
       }
     );

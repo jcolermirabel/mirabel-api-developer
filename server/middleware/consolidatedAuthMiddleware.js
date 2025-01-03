@@ -18,7 +18,7 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
 
   try {
     // 1. Validate API key exists
-    const apiKey = req.headers['x-mirabel-api'];
+    const apiKey = req.headers['x-mirabel-api-key'];
     if (!apiKey) {
       throw new AuthenticationError('API key required', 401);
     }

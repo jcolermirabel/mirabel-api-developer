@@ -4,7 +4,7 @@ const Role = require('../models/Role');
 
 const apiKeyAuth = async (req, res, next) => {
   try {
-    const apiKey = req.headers['x-mirabel-api'];
+    const apiKey = req.headers['x-mirabel-api-key'];
     
     if (!apiKey) {
       return res.status(401).json({ message: 'API key required' });

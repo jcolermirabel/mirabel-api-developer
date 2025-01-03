@@ -8,7 +8,7 @@ const getAuthHeaders = () => {
   
   return {
     'Authorization': `Bearer ${user?.token}`,
-    'X-Mirabel-API': process.env.REACT_APP_API_KEY
+    'x-mirabel-api-key': process.env.REACT_APP_API_KEY
   };
 };
 

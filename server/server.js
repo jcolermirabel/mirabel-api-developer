@@ -31,7 +31,7 @@ app.use(cors({
   origin: ['http://localhost:3000', 'https://staging-api.magazinemanager.biz'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'X-Mirabel-API'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'x-mirabel-api-key'],
   exposedHeaders: ['X-CSRF-Token']
 }));
 

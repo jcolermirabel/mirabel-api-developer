@@ -23,17 +23,34 @@ const connectDB = require('./config/database');
 const cookieParser = require('cookie-parser');
 const persistentAuth = require('./middleware/persistentAuth');
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  next();
+});
+
 // Security middleware
 app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://staging-api.magazinemanager.biz'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://staging-api.magazinemanager.biz'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'x-mirabel-api-key'],
   exposedHeaders: ['X-CSRF-Token']
 }));
+
+// Add response logging middleware
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  res.send = function(body) {
+    console.log(`[${new Date().toISOString()}] Response status: ${res.statusCode}`);
+    return originalSend.call(this, body);
+  };
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -79,6 +96,13 @@ app.use('/api/ai', persistentAuth, require('./routes/ai'));
 
 // API key protected routes
 app.use('/api', require('./routes/api'));
+
+// Add a catch-all route to log 404 errors
+app.use('*', (req, res) => {
+  console.log(`[404 ERROR] ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', JSON.stringify(req.headers));
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {

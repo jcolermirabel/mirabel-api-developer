@@ -12,36 +12,101 @@ router.use(authMiddleware);
 
 router.post('/', async (req, res) => {
   try {
-    const encryptedPassword = encryptDatabasePassword(req.body.password);
-    const service = new Service({
-      ...req.body,
-      password: encryptedPassword,
-      createdBy: req.user.userId
+    console.log('Service creation request received:', {
+      name: req.body.name,
+      host: req.body.host,
+      port: req.body.port,
+      database: req.body.database,
+      username: req.body.username,
+      passwordLength: req.body.password ? req.body.password.length : 0,
+      hasPasswordColon: req.body.password ? req.body.password.includes(':') : false
     });
 
-    await databaseService.testConnection(service);
-    const savedService = await service.save();
+    // Test connection first with unencrypted password
+    console.log('Testing connection with unencrypted password');
+    const connectionResult = await databaseService.testConnection({
+      ...req.body
+    });
+    
+    console.log('Connection test result:', connectionResult);
+    
+    if (!connectionResult.success) {
+      return res.status(400).json({ 
+        message: 'Connection test failed', 
+        error: connectionResult.error 
+      });
+    }
 
-    // Fetch schema data after service creation
-    const config = {
-      user: service.username,
-      password: req.body.password, // Use unencrypted password
-      server: service.host,
-      port: service.port,
-      database: service.database,
-      options: {
-        encrypt: true,
-        trustServerCertificate: true,
+    // Only encrypt password after successful connection test
+    console.log('Connection test successful, encrypting password');
+    try {
+      const encryptedPassword = encryptDatabasePassword(req.body.password);
+      console.log('Password encryption successful, encrypted length:', encryptedPassword.length);
+      
+      const service = new Service({
+        ...req.body,
+        password: encryptedPassword,
+        createdBy: req.user.userId
+      });
+
+      console.log('Saving service to database');
+      const savedService = await service.save();
+      console.log('Service saved successfully with ID:', savedService._id);
+
+      // Fetch schema data after service creation in a separate try/catch
+      try {
+        console.log('Fetching database objects');
+        const config = {
+          user: service.username,
+          password: req.body.password, // Use unencrypted password
+          server: service.host,
+          port: service.port,
+          database: service.database,
+          options: {
+            encrypt: true,
+            trustServerCertificate: true,
+          }
+        };
+
+        const dbObjects = await fetchDatabaseObjects(config);
+        console.log('Database objects fetched successfully, count:', 
+          dbObjects.tables.length + dbObjects.views.length + dbObjects.procedures.length);
+        
+        try {
+          await updateDatabaseObjects(savedService._id, dbObjects);
+          console.log('Database objects saved to MongoDB');
+        } catch (updateError) {
+          console.error('Error updating database objects:', updateError);
+          // Continue with service creation even if schema update fails
+        }
+      } catch (schemaError) {
+        console.error('Error fetching database schema:', schemaError);
+        // Continue with service creation even if schema fetch fails
       }
-    };
 
-    const dbObjects = await fetchDatabaseObjects(config);
-    await updateDatabaseObjects(savedService._id, dbObjects);
-
-    res.status(201).json(savedService);
+      // Return the service info even if schema fetch/update fails
+      res.status(201).json(savedService);
+    } catch (encryptionError) {
+      console.error('Error in password encryption or service saving:', encryptionError);
+      res.status(500).json({ message: 'Error processing service data: ' + encryptionError.message });
+    }
   } catch (error) {
-    logger.error('Error creating service:', error);
-    res.status(500).json({ message: 'Failed to create service' });
+    console.error('Error creating service:', error);
+    // Log detailed error information
+    if (error.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
+    if (error.cause) {
+      console.error('Error cause:', error.cause);
+    }
+    
+    res.status(500).json({ 
+      message: 'Failed to create service: ' + error.message,
+      errorCode: error.code || 'UNKNOWN'
+    });
   }
 });
 
@@ -122,18 +187,59 @@ router.get('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
  try {
-   const service = await Service.findByIdAndUpdate(
-     req.params.id,
-     { $set: req.body },
-     { new: true }
-   );
-   if (!service) {
+   console.log('Update service request received for ID:', req.params.id);
+   
+   // Find the existing service
+   const existingService = await Service.findById(req.params.id);
+   if (!existingService) {
+     console.log('Service not found:', req.params.id);
      return res.status(404).json({ message: 'Service not found' });
    }
+   
+   // Create update data
+   const updateData = { ...req.body };
+   
+   // Handle password separately
+   if (updateData.password) {
+     console.log('Password update detected, handling encryption');
+     
+     // Only encrypt if it's a new password (not already encrypted)
+     if (!updateData.password.includes(':')) {
+       console.log('New password provided, encrypting');
+       try {
+         updateData.password = encryptDatabasePassword(updateData.password);
+         console.log('Password encrypted successfully');
+       } catch (encryptError) {
+         console.error('Failed to encrypt password:', encryptError);
+         return res.status(500).json({ message: 'Failed to encrypt password: ' + encryptError.message });
+       }
+     } else {
+       console.log('Password appears to already be encrypted (contains colon), skipping encryption');
+     }
+   } else {
+     console.log('No password update, keeping existing password');
+     delete updateData.password; // Remove password from update data if not provided
+   }
+   
+   console.log('Updating service with data:', {
+     ...updateData,
+     password: updateData.password ? '[REDACTED]' : undefined
+   });
+   
+   const service = await Service.findByIdAndUpdate(
+     req.params.id,
+     { $set: updateData },
+     { new: true }
+   );
+   
+   console.log('Service updated successfully');
    res.json(service);
  } catch (error) {
-   logger.error('Error updating service:', error);
-   res.status(500).json({ message: 'Error updating service' });
+   console.error('Error updating service:', error);
+   if (error.stack) {
+     console.error('Stack trace:', error.stack);
+   }
+   res.status(500).json({ message: 'Error updating service: ' + error.message });
  }
 });
 

@@ -46,13 +46,72 @@ class DatabaseService {
   static async testConnection(service) {
     let pool;
     try {
-      pool = await this.createConnection(service);
+      console.log('DatabaseService.testConnection called with:', {
+        host: service.host,
+        port: service.port,
+        database: service.database,
+        username: service.username,
+        passwordProvided: !!service.password,
+        passwordLength: service.password ? service.password.length : 0
+      });
+
+      // Handle both encrypted and unencrypted passwords
+      let password = service.password;
+      
+      // If the password contains a colon, it's likely already encrypted
+      if (typeof password === 'string' && password.includes(':')) {
+        console.log('Password appears to be encrypted (contains colon), attempting to decrypt');
+        try {
+          password = decryptDatabasePassword(password);
+          console.log('Password decryption successful');
+        } catch (error) {
+          console.error('Password decryption failed:', error);
+          // If decryption fails, assume password is not encrypted
+          console.log('Assuming password is not encrypted despite containing colon');
+        }
+      } else {
+        console.log('Using password as-is (no colon detected)');
+      }
+      
+      const config = {
+        user: service.username,
+        password: password,
+        server: service.host,
+        port: parseInt(service.port) || 1433,
+        database: service.database,
+        options: {
+          encrypt: true,
+          trustServerCertificate: true,
+          connectTimeout: 30000
+        }
+      };
+
+      console.log('Attempting SQL connection with config:', {
+        user: config.user,
+        server: config.server,
+        port: config.port,
+        database: config.database
+      });
+
+      pool = await sql.connect(config);
+      console.log('SQL connection established successfully');
+      
+      console.log('Executing test query');
       await pool.request().query('SELECT 1');
+      console.log('Test query executed successfully');
+      
       return {
         success: true,
         message: 'Connection successful'
       };
     } catch (error) {
+      console.error('Connection test failed:', {
+        message: error.message,
+        code: error.code,
+        state: error.state,
+        stack: error.stack
+      });
+      
       return {
         success: false,
         error: error.message,
@@ -65,6 +124,7 @@ class DatabaseService {
       if (pool) {
         try {
           await pool.close();
+          console.log('SQL connection closed');
         } catch (err) {
           console.error('Error closing SQL connection:', err);
         }

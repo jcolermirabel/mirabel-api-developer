@@ -247,7 +247,7 @@ const UserList = () => {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  No users found. Create your first user with the "Add User" button.
+                  No users found. Create your first user with the &quot;Add User&quot; button.
                 </TableCell>
               </TableRow>
             )}

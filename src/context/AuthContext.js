@@ -1,56 +1,60 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../services/api';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { loginUser as apiLoginUser, logoutUser as apiLogoutUser } from '../services/authService';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const initAuth = async () => {
+    // Try to get user from localStorage on initial load
+    try {
       const storedUser = localStorage.getItem('user');
-      
       if (storedUser) {
-        try {
-          const response = await api.post('/api/auth/refresh');
-          setUser(response.data.user);
-          localStorage.setItem('user', JSON.stringify(response.data));
-        } catch (error) {
-          localStorage.removeItem('user');
-        }
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        
+        // Debug output
+        console.log('Auth initialized with token:', parsedUser.token ? 'YES' : 'NO');
+      } else {
+        console.log('No stored user found');
       }
-      
+    } catch (error) {
+      console.error('Error loading user from localStorage:', error);
+    } finally {
       setLoading(false);
-    };
-
-    initAuth();
+    }
   }, []);
 
   const login = async (email, password) => {
-    const response = await api.post('/api/auth/login', { email, password });
-    setUser(response.data.user);
-    localStorage.setItem('user', JSON.stringify(response.data));
-    navigate('/dashboard');
+    try {
+      const userData = await apiLoginUser(email, password);
+      
+      if (!userData || !userData.token) {
+        console.error('Login response missing token:', userData);
+        throw new Error('Invalid login response');
+      }
+      
+      // Store user in state and localStorage
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Debug output
+      console.log('Login successful, token stored:', !!userData.token);
+      
+      return userData;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
-  const logout = async () => {
-    // First clear local state
+  const logout = () => {
+    // Clear user from state and localStorage
     setUser(null);
     localStorage.removeItem('user');
-    
-    // Then navigate
-    navigate('/login', { replace: true });
-    
-    // Finally, try to logout on server (but don't wait for it)
-    try {
-      await api.post('/api/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Ignore error since we've already cleared local state
-    }
+    apiLogoutUser();
   };
 
   const value = {

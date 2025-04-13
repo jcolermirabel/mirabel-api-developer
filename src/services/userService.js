@@ -1,22 +1,8 @@
-import axios from 'axios';
-import { getToken } from './authService';
-
-// Use empty string for relative path in production
-const API_URL = process.env.REACT_APP_API_URL || '';
-
-const getAuthHeaders = () => {
-  const token = getToken();
-  return {
-    'Authorization': token ? `Bearer ${token}` : ''
-  };
-};
+import api from './api';
 
 export const getUsers = async () => {
   try {
-    const response = await axios.get(`${API_URL}/api/users`, {
-      headers: getAuthHeaders(),
-      withCredentials: true
-    });
+    const response = await api.get('/api/users');
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -26,11 +12,7 @@ export const getUsers = async () => {
 
 export const createUser = async (userData) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/users`,
-      userData,
-      { headers: getAuthHeaders() }
-    );
+    const response = await api.post('/api/users', userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to create user');
@@ -39,11 +21,7 @@ export const createUser = async (userData) => {
 
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await axios.put(
-      `${API_URL}/api/users/${userId}`,
-      userData,
-      { headers: getAuthHeaders() }
-    );
+    const response = await api.put(`/api/users/${userId}`, userData);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to update user');
@@ -52,10 +30,7 @@ export const updateUser = async (userId, userData) => {
 
 export const deleteUser = async (userId) => {
   try {
-    await axios.delete(
-      `${API_URL}/api/users/${userId}`,
-      { headers: getAuthHeaders() }
-    );
+    await api.delete(`/api/users/${userId}`);
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to delete user');
   }
@@ -63,11 +38,7 @@ export const deleteUser = async (userId) => {
 
 export const generateApiKey = async (userId) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/users/${userId}/generate-api-key`,
-      {},
-      { headers: getAuthHeaders() }
-    );
+    const response = await api.post(`/api/users/${userId}/generate-api-key`);
     return response.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || 'Failed to generate API key');

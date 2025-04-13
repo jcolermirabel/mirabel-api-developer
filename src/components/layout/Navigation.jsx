@@ -111,7 +111,7 @@ const Navigation = () => {
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {!isDrawerCollapsed && (
           <Typography variant="h6" noWrap component="div">
-            Mirabel API
+            Mirabel Connect
           </Typography>
         )}
         <IconButton onClick={toggleDrawerCollapse}>

@@ -42,10 +42,11 @@ const ApplicationList = () => {
   const fetchApplications = async () => {
     try {
       const data = await getApplications();
-      setApplications(data);
+      setApplications(Array.isArray(data) ? data : []);
       setError('');
     } catch (err) {
       setError('Failed to fetch applications');
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -119,13 +120,13 @@ const ApplicationList = () => {
         <Typography variant="h4">Applications</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <ExportMenu 
-            data={applications.map(app => ({
+            data={Array.isArray(applications) ? applications.map(app => ({
               Name: app.name,
               Description: app.description,
               DefaultRole: app.defaultRole?.name,
               Status: app.isActive ? 'Active' : 'Inactive',
-              CreatedAt: new Date(app.createdAt).toLocaleString()
-            }))}
+              CreatedAt: new Date(app.createdAt || app.created).toLocaleString()
+            })) : []}
             filename="applications-list"
           />
           <Button
@@ -224,70 +225,78 @@ const ApplicationList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {applications.map((app) => (
-              <TableRow 
-                key={app._id}
-                sx={{
-                  '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                  }
-                }}
-              >
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedItems.has(app._id)}
-                    onChange={() => toggleSelection(app._id)}
-                  />
-                </TableCell>
-                <TableCell>{app.name}</TableCell>
-                <TableCell>{app.description}</TableCell>
-                <TableCell>{app.defaultRole?.name}</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography
-                      sx={{
-                        fontFamily: 'monospace',
-                        maxWidth: '200px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}
-                    >
-                      {app.apiKey}
-                    </Typography>
-                    <IconButton size="small" onClick={() => handleCopyApiKey(app.apiKey)}>
-                      <CopyIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => handleRegenerateApiKey(app._id)}>
-                      <RefreshIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={app.isActive}
-                    onChange={() => handleToggleActive(app)} 
-                    color="primary"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex' }}>
-                    <IconButton size="small" onClick={() => {
-                      setEditApplication(app);
-                      setOpenForm(true);
-                    }}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => setConfirmDelete({ open: true, applicationId: app._id })}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
+            {Array.isArray(applications) && applications.length > 0 ? (
+              applications.map((app) => (
+                <TableRow 
+                  key={app._id}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedItems.has(app._id)}
+                      onChange={() => toggleSelection(app._id)}
+                    />
+                  </TableCell>
+                  <TableCell>{app.name}</TableCell>
+                  <TableCell>{app.description}</TableCell>
+                  <TableCell>{app.defaultRole?.name}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography
+                        sx={{
+                          fontFamily: 'monospace',
+                          maxWidth: '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {app.apiKey}
+                      </Typography>
+                      <IconButton size="small" onClick={() => handleCopyApiKey(app.apiKey)}>
+                        <CopyIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleRegenerateApiKey(app._id)}>
+                        <RefreshIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={app.isActive}
+                      onChange={() => handleToggleActive(app)} 
+                      color="primary"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex' }}>
+                      <IconButton size="small" onClick={() => {
+                        setEditApplication(app);
+                        setOpenForm(true);
+                      }}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => setConfirmDelete({ open: true, applicationId: app._id })}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  No applications found. Create your first application with the &quot;Add Application&quot; button.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </Box>

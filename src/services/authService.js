@@ -1,44 +1,56 @@
 import axios from 'axios';
-import { hashPassword, comparePassword } from '../utils/encryption';
+// Remove the unused imports
+// import { hashPassword, comparePassword } from '../utils/encryption';
 
-const API_URL = process.env.REACT_APP_API_URL;
+// Use empty string for relative URL in production
+const API_URL = process.env.REACT_APP_API_URL || '';
 
-export const login = async (email, password) => {
+export const loginUser = async (email, password) => {
   try {
     const response = await axios.post(`${API_URL}/api/auth/login`, {
       email,
       password
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
     });
     
-    if (response.data.token) {
+    // Store user and token properly
+    if (response.data && response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data));
+      console.log('User logged in and stored:', response.data);
     }
     
     return response.data;
   } catch (error) {
-    console.error('Login service error:', error);
-    throw new Error(error.response?.data?.message || 'Login failed');
+    console.error('Login error:', error);
+    throw error;
   }
 };
 
-export const register = async (userData) => {
-  try {
-    const hashedPassword = await hashPassword(userData.password);
-    const response = await axios.post(`${API_URL}/api/auth/register`, {
-      ...userData,
-      password: hashedPassword
-    });
-    
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.message || 'Registration failed');
-  }
-};
-
-export const logout = () => {
+export const logoutUser = () => {
   localStorage.removeItem('user');
+};
+
+export const getCurrentUser = () => {
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return null;
+  }
+};
+
+// Simplify the registerUser function
+export const registerUser = async (userData) => {
+  const response = await axios.post(`${API_URL}/api/auth/register`, userData);
+  return response.data;
+};
+
+export const isAuthenticated = () => {
+  const user = getCurrentUser();
+  return !!user && !!user.token;
+};
+
+export const getToken = () => {
+  const user = getCurrentUser();
+  return user ? user.token : null;
 };

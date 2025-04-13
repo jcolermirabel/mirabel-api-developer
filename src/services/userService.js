@@ -1,32 +1,31 @@
 import axios from 'axios';
+import { getToken } from './authService';
 
-const API_URL = process.env.REACT_APP_API_URL + '/api';
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const getAuthHeaders = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  console.log('Current user:', user);
-  
+  const token = getToken();
   return {
-    'Authorization': `Bearer ${user?.token}`,
-    'x-mirabel-api-key': process.env.REACT_APP_API_KEY
+    'Authorization': token ? `Bearer ${token}` : ''
   };
 };
 
 export const getUsers = async () => {
   try {
-    console.log('Fetching users...');
-    const response = await axios.get(
-      `${API_URL}/users`,
-      { 
-        headers: getAuthHeaders(),
-        withCredentials: true
-      }
-    );
+    console.log('Fetching users from:', `${API_URL}/api/users`);
+    const headers = getAuthHeaders();
+    console.log('Auth headers:', headers);
+    
+    const response = await axios.get(`${API_URL}/api/users`, {
+      headers,
+      withCredentials: true
+    });
+    
     console.log('Users response:', response.data);
-    return response.data;
+    return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching users:', error);
-    console.error('Auth headers:', getAuthHeaders());
     throw error;
   }
 };
@@ -34,7 +33,7 @@ export const getUsers = async () => {
 export const createUser = async (userData) => {
   try {
     const response = await axios.post(
-      `${API_URL}/users`,
+      `${API_URL}/api/users`,
       userData,
       { headers: getAuthHeaders() }
     );
@@ -47,7 +46,7 @@ export const createUser = async (userData) => {
 export const updateUser = async (userId, userData) => {
   try {
     const response = await axios.put(
-      `${API_URL}/users/${userId}`,
+      `${API_URL}/api/users/${userId}`,
       userData,
       { headers: getAuthHeaders() }
     );
@@ -60,7 +59,7 @@ export const updateUser = async (userId, userData) => {
 export const deleteUser = async (userId) => {
   try {
     await axios.delete(
-      `${API_URL}/users/${userId}`,
+      `${API_URL}/api/users/${userId}`,
       { headers: getAuthHeaders() }
     );
   } catch (error) {
@@ -71,7 +70,7 @@ export const deleteUser = async (userId) => {
 export const generateApiKey = async (userId) => {
   try {
     const response = await axios.post(
-      `${API_URL}/users/${userId}/generate-api-key`,
+      `${API_URL}/api/users/${userId}/generate-api-key`,
       {},
       { headers: getAuthHeaders() }
     );

@@ -43,10 +43,12 @@ const UserList = () => {
   const fetchUsers = useCallback(async () => {
     try {
       const data = await getUsers();
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : []);
       setError('');
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
+      setError('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -83,11 +85,11 @@ const UserList = () => {
 
   const prepareExportData = () => {
     return users.map(user => ({
-      FirstName: user.firstName,
-      LastName: user.lastName,
+      FirstName: user.firstName || (user.name ? user.name.split(' ')[0] : ''),
+      LastName: user.lastName || (user.name ? user.name.split(' ').slice(1).join(' ') : ''),
       Email: user.email,
       Role: user.isAdmin ? 'Administrator' : 'User',
-      CreatedAt: new Date(user.createdAt).toLocaleString(),
+      CreatedAt: new Date(user.createdAt || user.created).toLocaleString(),
       LastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
       Status: user.isActive ? 'Active' : 'Inactive'
     }));
@@ -196,51 +198,59 @@ const UserList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedItems.has(user._id)}
-                    onChange={() => toggleSelection(user._id)}
-                  />
-                </TableCell>
-                <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  {user.isAdmin && (
-                    <Chip
-                      label="Admin"
-                      color="primary"
-                      size="small"
+            {Array.isArray(users) && users.length > 0 ? (
+              users.map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedItems.has(user._id)}
+                      onChange={() => toggleSelection(user._id)}
                     />
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={user.isActive}
-                    onChange={() => handleActiveToggle(user._id, user.isActive)}
-                    color="primary"
-                  />
-                </TableCell>
-                <TableCell>
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex' }}>
-                    <IconButton size="small" onClick={() => handleEdit(user)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      size="small"
-                      onClick={() => setConfirmDelete({ open: true, userId: user._id })}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
+                  </TableCell>
+                  <TableCell>{user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    {user.isAdmin && (
+                      <Chip
+                        label="Admin"
+                        color="primary"
+                        size="small"
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={user.isActive}
+                      onChange={() => handleActiveToggle(user._id, user.isActive)}
+                      color="primary"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never'}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex' }}>
+                      <IconButton size="small" onClick={() => handleEdit(user)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton 
+                        size="small"
+                        onClick={() => setConfirmDelete({ open: true, userId: user._id })}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  No users found. Create your first user with the "Add User" button.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </Box>

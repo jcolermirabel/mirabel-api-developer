@@ -1,7 +1,15 @@
 import axios from 'axios';
-import { getAuthHeaders } from './utils';
+import { getToken } from './authService';
 
-const API_URL = process.env.REACT_APP_API_URL;
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
+
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
 
 export const logActivity = async (action, details) => {
   try {
@@ -15,17 +23,31 @@ export const logActivity = async (action, details) => {
   }
 };
 
-export const getAuditLogs = async (filters) => {
+export const getAuditLogs = async (filters = {}) => {
   try {
-    const response = await axios.get(
-      `${API_URL}/audit/logs`,
-      { 
-        params: filters,
-        headers: getAuthHeaders() 
-      }
-    );
+    const response = await axios.get(`${API_URL}/api/audit`, {
+      params: filters,
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    throw error;
+  }
+};
+
+export const getAuditLog = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/audit/${id}`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch audit logs');
+    console.error(`Error fetching audit log ${id}:`, error);
+    throw error;
   }
-}; 
+};
+
+// Add any other audit-related API calls here 

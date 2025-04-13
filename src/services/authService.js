@@ -15,7 +15,6 @@ export const loginUser = async (email, password) => {
     // Store user and token properly
     if (response.data && response.data.token) {
       localStorage.setItem('user', JSON.stringify(response.data));
-      console.log('User logged in and stored:', response.data);
     }
     
     return response.data;

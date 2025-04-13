@@ -1,28 +1,46 @@
 import axios from 'axios';
+import { getToken } from './authService';
 
-const API_URL = process.env.REACT_APP_API_URL + '/api';
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
 
-const getAuthHeaders = () => ({
-  'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-  'x-mirabel-api-key': process.env.REACT_APP_API_KEY
-});
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
 
 export const getApplications = async () => {
   try {
-    const response = await axios.get(
-      `${API_URL}/applications`,
-      { headers: getAuthHeaders() }
-    );
+    const response = await axios.get(`${API_URL}/api/applications`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    throw error;
+  }
+};
+
+export const getApplication = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/applications/${id}`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
     return response.data;
   } catch (error) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch applications');
+    console.error(`Error fetching application ${id}:`, error);
+    throw error;
   }
 };
 
 export const createApplication = async (applicationData) => {
   try {
     const response = await axios.post(
-      `${API_URL}/applications`,
+      `${API_URL}/api/applications`,
       applicationData,
       { headers: getAuthHeaders() }
     );
@@ -35,7 +53,7 @@ export const createApplication = async (applicationData) => {
 export const updateApplication = async (id, applicationData) => {
   try {
     const response = await axios.put(
-      `${API_URL}/applications/${id}`,
+      `${API_URL}/api/applications/${id}`,
       applicationData,
       { headers: getAuthHeaders() }
     );
@@ -48,7 +66,7 @@ export const updateApplication = async (id, applicationData) => {
 export const deleteApplication = async (id) => {
   try {
     await axios.delete(
-      `${API_URL}/applications/${id}`,
+      `${API_URL}/api/applications/${id}`,
       { headers: getAuthHeaders() }
     );
   } catch (error) {
@@ -59,7 +77,7 @@ export const deleteApplication = async (id) => {
 export const regenerateApiKey = async (id) => {
   try {
     const response = await axios.post(
-      `${API_URL}/applications/${id}/regenerate-key`,
+      `${API_URL}/api/applications/${id}/regenerate-key`,
       {},
       { headers: getAuthHeaders() }
     );

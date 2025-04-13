@@ -1,65 +1,40 @@
-const API_URL = process.env.REACT_APP_API_URL;
+import axios from 'axios';
+import { getToken } from './authService';
 
-export const getRoleEndpoints = async (roleId) => {
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
+
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
+
+export const getDocumentation = async (type, id) => {
   try {
-    console.log('Starting documentation fetch for role:', roleId);
-    
-    const response = await fetch(
-      `${API_URL}/api/documentation/role/${roleId}`,
-      { 
-        headers: {
-          'Authorization': `Bearer ${JSON.parse(localStorage.getItem('user')).token}`,
-          'x-mirabel-api-key': process.env.REACT_APP_API_KEY
-        }
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const reader = response.body.getReader();
-    const endpoints = [];
-    let isDone = false;
-
-    while (!isDone) {
-      const { done, value } = await reader.read();
-      
-      if (done) {
-        console.log('Documentation stream complete:', {
-          endpointCount: endpoints.length
-        });
-        isDone = true;
-        break;
-      }
-
-      // Convert the chunk to text
-      const chunk = new TextDecoder().decode(value);
-      const lines = chunk.split('\n').filter(Boolean);
-
-      // Process each line
-      for (const line of lines) {
-        try {
-          const data = JSON.parse(line);
-          if (data.endpoint) {
-            endpoints.push(data.endpoint);
-            console.log('Received endpoint:', {
-              service: data.endpoint.service,
-              object: data.endpoint.objectName
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to parse chunk:', e);
-        }
-      }
-    }
-
-    return { endpoints };
-  } catch (error) {
-    console.error('Documentation service error:', {
-      message: error.message,
-      status: error.status
+    const response = await axios.get(`${API_URL}/api/documentation/${type}/${id}`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
     });
-    throw new Error(error.message || 'Failed to fetch role endpoints');
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching documentation for ${type}/${id}:`, error);
+    throw error;
   }
-}; 
+};
+
+export const updateDocumentation = async (type, id, content) => {
+  try {
+    const response = await axios.put(
+      `${API_URL}/api/documentation/${type}/${id}`,
+      { content },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to update documentation');
+  }
+};
+
+// Add any other documentation-related API calls here 

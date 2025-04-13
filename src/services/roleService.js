@@ -1,4 +1,15 @@
-import api from './api';
+import axios from 'axios';
+import { getToken } from './authService';
+
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
+
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
 
 // Add logging to track API calls
 const logApiCall = (method, url, error = null) => {
@@ -11,56 +22,81 @@ const logApiCall = (method, url, error = null) => {
 };
 
 export const getRoles = async () => {
-  const response = await api.get('/api/roles');
-  return response.data;
+  try {
+    const response = await axios.get(`${API_URL}/api/roles`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    throw error;
+  }
 };
 
-export const getRoleById = async (id) => {
-  const response = await api.get(`/api/roles/${id}`);
-  return response.data;
+export const getRole = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/roles/${id}`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching role ${id}:`, error);
+    throw error;
+  }
 };
+
+// Add this alias for backward compatibility
+export const getRoleById = getRole;
 
 export const createRole = async (roleData) => {
   try {
-    console.log('Attempting to create role with data:', roleData);
-    const response = await api.post('/api/roles', roleData);
-    console.log('Role creation response:', response.data);
+    const response = await axios.post(
+      `${API_URL}/api/roles`,
+      roleData,
+      { headers: getAuthHeaders() }
+    );
     return response.data;
   } catch (error) {
-    console.error('Role creation failed:', error.response?.data || error.message);
-    throw error;
+    throw new Error(error.response?.data?.message || 'Failed to create role');
   }
 };
 
 export const updateRole = async (id, roleData) => {
   try {
-    console.log('Attempting to update role:', { id, roleData });
-    const response = await api.put(`/api/roles/${id}`, {
-      name: roleData.name,
-      description: roleData.description,
-      serviceId: roleData.serviceId,
-      permissions: roleData.permissions,
-      isActive: roleData.isActive
-    });
-    console.log('Role update response:', response.data);
+    const response = await axios.put(
+      `${API_URL}/api/roles/${id}`,
+      roleData,
+      { headers: getAuthHeaders() }
+    );
     return response.data;
   } catch (error) {
-    console.error('Role update failed:', error.response?.data || error.message);
-    throw error;
+    throw new Error(error.response?.data?.message || 'Failed to update role');
   }
 };
 
 export const deleteRole = async (id) => {
-  await api.delete(`/api/roles/${id}`);
+  try {
+    await axios.delete(
+      `${API_URL}/api/roles/${id}`,
+      { headers: getAuthHeaders() }
+    );
+  } catch (error) {
+    throw new Error(error.response?.data?.message || 'Failed to delete role');
+  }
 };
 
 export const getServiceSchema = async (serviceId) => {
   try {
-    const response = await api.get(`/api/roles/service/${serviceId}/schema`);
-    logApiCall('GET', `/api/roles/service/${serviceId}/schema`);
+    const response = await axios.get(`${API_URL}/api/roles/service/${serviceId}/schema`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
+    });
+    logApiCall('GET', `${API_URL}/api/roles/service/${serviceId}/schema`);
     return response.data;
   } catch (error) {
-    logApiCall('GET', `/api/roles/service/${serviceId}/schema`, error);
+    logApiCall('GET', `${API_URL}/api/roles/service/${serviceId}/schema`, error);
     throw error;
   }
 }; 

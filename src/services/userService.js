@@ -13,16 +13,10 @@ const getAuthHeaders = () => {
 
 export const getUsers = async () => {
   try {
-    console.log('Fetching users from:', `${API_URL}/api/users`);
-    const headers = getAuthHeaders();
-    console.log('Auth headers:', headers);
-    
     const response = await axios.get(`${API_URL}/api/users`, {
-      headers,
+      headers: getAuthHeaders(),
       withCredentials: true
     });
-    
-    console.log('Users response:', response.data);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching users:', error);

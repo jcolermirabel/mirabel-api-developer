@@ -1,16 +1,28 @@
 import axios from 'axios';
+import { getToken } from './authService';
 
-export const generateSampleData = async (procedureInfo) => {
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
+
+const getAuthHeaders = () => {
+  const token = getToken();
+  return {
+    'Authorization': token ? `Bearer ${token}` : ''
+  };
+};
+
+export const generateResponse = async (prompt) => {
   try {
-    const response = await axios.post('/api/ai/generate-samples', {
-      procedureName: procedureInfo.procedure_name,
-      definition: procedureInfo.procedure_definition,
-      parameters: procedureInfo.parameters
-    });
-    
-    return response.data.samples;
+    const response = await axios.post(
+      `${API_URL}/api/ai/generate`,
+      { prompt },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
   } catch (error) {
-    console.error('Failed to generate samples:', error);
-    return null;
+    console.error('Error generating AI response:', error);
+    throw new Error(error.response?.data?.message || 'Failed to generate AI response');
   }
-}; 
+};
+
+// Add any other AI-related API calls here 

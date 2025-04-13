@@ -1,24 +1,27 @@
 import axios from 'axios';
+import { getToken } from './authService';
 
-const API_URL = process.env.REACT_APP_API_URL + '/api';
+// Use empty string for relative path in production
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 const getAuthHeaders = () => {
-  const userStr = localStorage.getItem('user');
-  const userData = JSON.parse(userStr);
+  const token = getToken();
   return {
-    'Authorization': `Bearer ${userData.token}`,
-    'Content-Type': 'application/json'
+    'Authorization': token ? `Bearer ${token}` : ''
   };
 };
 
 export const getDashboardMetrics = async () => {
   try {
-    const response = await axios.get(`${API_URL}/dashboard/metrics`, {
-      headers: getAuthHeaders()
+    const response = await axios.get(`${API_URL}/api/dashboard/metrics`, {
+      headers: getAuthHeaders(),
+      withCredentials: true
     });
     return response.data;
   } catch (error) {
-    console.error('Dashboard metrics error:', error);
+    console.error('Error fetching dashboard metrics:', error);
     throw new Error('Failed to fetch dashboard metrics');
   }
-}; 
+};
+
+// Add any other dashboard-related API calls here 

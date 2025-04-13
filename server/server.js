@@ -1,9 +1,14 @@
-require('dotenv').config();
+const path = require('path');
+const envPath = process.env.NODE_ENV === 'production' 
+  ? path.resolve(__dirname, '.env.production')
+  : path.resolve(__dirname, '.env');
+
+require('dotenv').config({ path: envPath });
+console.log('Environment:', process.env.NODE_ENV);
 const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 const { logger } = require('./middleware/logger');
 
 // Debug environment variables

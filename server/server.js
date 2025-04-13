@@ -40,11 +40,10 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'https://staging-api.magazinemanager.biz'],
+  origin: ['https://mirabelconnect.mirabeltechnologies.com', 'http://mirabelconnect.mirabeltechnologies.com', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'Cookie', 'x-mirabel-api-key'],
-  exposedHeaders: ['X-CSRF-Token']
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 // Add response logging middleware

@@ -50,6 +50,10 @@ const encryptDatabasePassword = (password) => {
       throw new Error('ENCRYPTION_KEY environment variable is not set');
     }
 
+    // Temporary debugging
+    console.log(`[DEBUG] ENCRYPTION_KEY Length: ${process.env.ENCRYPTION_KEY.length}`);
+    console.log(`[DEBUG] ENCRYPTION_KEY Value: "${process.env.ENCRYPTION_KEY}"`);
+
     const iv = crypto.randomBytes(IV_LENGTH);
     
     const cipher = crypto.createCipheriv(

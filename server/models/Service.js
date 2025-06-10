@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const sql = require('mssql');
-const { decryptDatabasePassword } = require('../utils/encryption');
+const { decryptDatabasePassword, encryptDatabasePassword } = require('../utils/encryption');
 
 const serviceSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
@@ -14,6 +14,25 @@ const serviceSchema = new mongoose.Schema({
   failoverHost: { type: String, required: false },
   connectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Connection', required: false },
 }, { timestamps: true });
+
+// Pre-save middleware to encrypt password
+serviceSchema.pre('save', function(next) {
+  // only hash the password if it has been modified (or is new) AND it exists
+  if (!this.isModified('password') || !this.password) {
+    return next();
+  }
+
+  // just to be safe, don't re-encrypt if it's already encrypted
+  try {
+    decryptDatabasePassword(this.password);
+    // if no error, it's already encrypted
+    return next();
+  } catch (e) {
+    // if decryption fails, it's a new plaintext password
+    this.password = encryptDatabasePassword(this.password);
+    next();
+  }
+});
 
 // Add method to execute stored procedure
 serviceSchema.methods.executeProcedure = async function(procedureName) {

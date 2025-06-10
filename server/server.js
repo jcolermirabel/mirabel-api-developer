@@ -10,6 +10,7 @@ const app = express();
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { logger } = require('./middleware/logger');
+const { consolidatedApiKeyMiddleware } = require('./middleware/consolidatedAuthMiddleware');
 
 // Debug environment variables
 console.log('Environment:', {
@@ -100,7 +101,8 @@ app.use('/api/imports', persistentAuth, require('./routes/imports'));
 app.use('/api/ai', persistentAuth, require('./routes/ai'));
 
 // API key protected routes
-app.use('/api', require('./routes/api'));
+app.use('/api/v1', require('./routes/api'));
+app.use('/api/v2', require('./routes/publicApi'));
 
 // Add a catch-all route to log 404 errors
 app.use('*', (req, res) => {

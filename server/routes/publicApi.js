@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const sql = require('mssql');
 const Service = require('../models/Service');
+const Connection = require('../models/Connection');
 const ApiUsage = require('../models/ApiUsage');
 const { decryptDatabasePassword } = require('../utils/encryption');
+const { consolidatedApiKeyMiddleware } = require('../middleware/consolidatedAuthMiddleware');
 
-// Public API endpoint handler
-router.get('/services/:serviceId/:endpoint', async (req, res) => {
+// Public API endpoint handler for stored procedures
+router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, async (req, res) => {
   let pool;
   try {
     console.log('Public API - Request received:', {
@@ -18,51 +21,58 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
     });
 
     console.log('Public API - Looking for service:', {
-      serviceId: req.params.serviceId,
-      endpoint: req.params.endpoint
+      serviceName: req.params.serviceName,
+      procedureName: req.params.procedureName
     });
 
-    // First try exact match
-    let service = await Service.findOne({ 
-      name: req.params.serviceId,
+    // Find service by case-insensitive name
+    const service = await Service.findOne({ 
+      name: { $regex: new RegExp(`^${req.params.serviceName}$`, 'i') },
       isActive: true
-    });
-
-    // If not found, try case-insensitive match
-    if (!service) {
-      service = await Service.findOne({ 
-        name: { $regex: new RegExp(`^${req.params.serviceId}$`, 'i') },
-        isActive: true
-      });
-    }
-
-    console.log('Public API - Raw service data:', service);
-
-    console.log('Public API - Service lookup result:', {
-      found: !!service,
-      serviceName: service?.name,
-      serviceId: service?._id,
-      isActive: service?.isActive,
-      host: service?.host,
-      port: service?.port,
-      database: service?.database
     });
 
     if (!service) {
       return res.status(404).json({ message: 'Service not found or inactive' });
     }
 
+    let connectionDetails = {};
+
+    if (service.connectionId) {
+      const connection = await Connection.findById(service.connectionId).select('+password');
+      if (!connection) {
+        throw new Error('The underlying connection for this service could not be found.');
+      }
+      connectionDetails = {
+        host: connection.host,
+        port: connection.port,
+        username: connection.username,
+        password: connection.password,
+      };
+    } else {
+      // Fallback for older services without a dedicated connection object
+      connectionDetails = {
+        host: service.host,
+        port: service.port,
+        username: service.username,
+        password: service.password,
+      };
+    }
+
+    if (!connectionDetails.password) {
+      throw new Error('Could not determine credentials for service.');
+    }
+
     console.log('Public API - Service found:', {
       id: service._id,
       name: service.name,
-      endpoint: req.params.endpoint
+      endpoint: req.params.procedureName
     });
 
     const config = {
-      user: service.username,
-      password: decryptDatabasePassword(service.password),
-      server: service.host,
-      port: parseInt(service.port),
+      user: connectionDetails.username,
+      password: decryptDatabasePassword(connectionDetails.password),
+      server: connectionDetails.host,
+      port: parseInt(connectionDetails.port),
       database: service.database,
       options: {
         encrypt: true,
@@ -91,7 +101,7 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
     });
 
     // Execute the stored procedure
-    const result = await request.execute(req.params.endpoint);
+    const result = await request.execute(req.params.procedureName);
 
     if (!result || !result.recordset) {
       throw new Error('No results returned from stored procedure');
@@ -110,7 +120,7 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
     const apiUsage = new ApiUsage({
       service: service._id,
       endpoint: req.originalUrl,
-      component: req.params.endpoint,
+      component: req.params.procedureName,
       role: req.application.defaultRole._id,
       application: req.application._id,
       timestamp: new Date(),
@@ -121,7 +131,7 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
     await apiUsage.save();
     console.log('API Usage logged:', {
       service: service.name,
-      endpoint: req.params.endpoint,
+      endpoint: req.params.procedureName,
       application: req.application.name,
       role: req.application.defaultRole.name,
       method: req.method
@@ -134,7 +144,7 @@ router.get('/services/:serviceId/:endpoint', async (req, res) => {
       const apiUsage = new ApiUsage({
         service: req.service._id,
         endpoint: req.originalUrl,
-        component: req.params.endpoint,
+        component: req.params.procedureName,
         role: req.application.defaultRole._id,
         application: req.application._id,
         timestamp: new Date(),

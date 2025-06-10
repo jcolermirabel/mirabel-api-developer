@@ -62,7 +62,7 @@ async function refreshServiceSchema(serviceId) {
     database: service.database,
     options: {
       encrypt: true,
-      trustServerCertificate: process.env.NODE_ENV !== 'production'
+      trustServerCertificate: true
     }
   };
 

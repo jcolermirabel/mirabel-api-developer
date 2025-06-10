@@ -76,7 +76,7 @@ router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, a
       database: service.database,
       options: {
         encrypt: true,
-        trustServerCertificate: process.env.NODE_ENV !== 'production',
+        trustServerCertificate: true,
         enableArithAbort: true,
         cryptoCredentialsDetails: {
           minVersion: 'TLSv1'

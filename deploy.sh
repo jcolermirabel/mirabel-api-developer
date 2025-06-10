@@ -26,6 +26,7 @@ cd server && npm install && cd ..
 [ ! -f ./server/.env.production ] && cp ./server/.env ./server/.env.production 2>/dev/null || :
 
 # 6. Build frontend
+export REACT_APP_API_URL=https://mirabelconnect.mirabeltechnologies.com
 npm run build
 
 # 7. Apply any database migrations if needed

@@ -19,7 +19,7 @@ const decryptDatabasePassword = (encryptedPassword) => {
     
     const decipher = crypto.createDecipheriv(
       'aes-256-cbc',
-      process.env.ENCRYPTION_KEY,
+      Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
       iv
     );
     
@@ -50,15 +50,11 @@ const encryptDatabasePassword = (password) => {
       throw new Error('ENCRYPTION_KEY environment variable is not set');
     }
 
-    // Temporary debugging
-    console.log(`[DEBUG] ENCRYPTION_KEY Length: ${process.env.ENCRYPTION_KEY.length}`);
-    console.log(`[DEBUG] ENCRYPTION_KEY Value: "${process.env.ENCRYPTION_KEY}"`);
-
     const iv = crypto.randomBytes(IV_LENGTH);
     
     const cipher = crypto.createCipheriv(
       'aes-256-cbc',
-      process.env.ENCRYPTION_KEY,
+      Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
       iv
     );
     

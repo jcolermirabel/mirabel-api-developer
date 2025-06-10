@@ -27,7 +27,7 @@ const generateTokens = (payload) => {
     { ...payload, type: 'access' },
     process.env.JWT_SECRET,
     { 
-      expiresIn: '15m', // Short-lived access token
+      expiresIn: '4h', // Longer-lived access token for better UX
       jwtid: accessTokenId,
       issuer: 'mirabel-api',
       audience: 'mirabel-client'
@@ -50,7 +50,7 @@ const generateTokens = (payload) => {
     refreshToken,
     accessTokenId,
     refreshTokenId,
-    expiresIn: 900, // 15 minutes in seconds
+    expiresIn: 14400, // 4 hours in seconds
     refreshExpiresIn: 604800 // 7 days in seconds
   };
 };

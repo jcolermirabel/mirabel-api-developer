@@ -100,7 +100,7 @@ router.post('/register', validate(registerValidation), async (req, res) => {
       // New token format
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      expiresIn: 900, // 15 minutes in seconds
+      expiresIn: 14400, // 4 hours in seconds
       // Backwards compatibility
       token: legacyToken,
       user: {
@@ -195,7 +195,7 @@ router.post('/login', validate(validationRules.auth.login), async (req, res) => 
         return res.json({
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
-          expiresIn: 900, // 15 minutes in seconds
+          expiresIn: 14400, // 4 hours in seconds
           // Backwards compatibility: also provide legacy token  
           token: tokens.accessToken,
           user: {
@@ -314,7 +314,7 @@ router.post('/login', validate(validationRules.auth.login), async (req, res) => 
         return res.json({
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
-          expiresIn: 900, // 15 minutes in seconds
+          expiresIn: 14400, // 4 hours in seconds
           // Backwards compatibility: also provide legacy token  
           token: tokens.accessToken,
           user: {
@@ -460,7 +460,7 @@ router.post('/refresh', validate(refreshTokenValidation), async (req, res) => {
       res.json({
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        expiresIn: 900 // 15 minutes in seconds
+        expiresIn: 14400, // 4 hours in seconds
       });
       
     } catch (error) {
@@ -512,7 +512,7 @@ router.post('/refresh-legacy', validate(refreshTokenValidation), async (req, res
         // New format
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
-        expiresIn: 900,
+        expiresIn: 14400,
         // Backwards compatibility
         token: legacyToken
       });

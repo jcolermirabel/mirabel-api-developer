@@ -1,44 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminOnly } = require('../middleware/auth');
 
-// Get all users
-router.get('/', async (req, res) => {
+router.use(authMiddleware);
+
+// Get all users (admin only)
+router.get('/', adminOnly, async (req, res) => {
   try {
-    console.log('Auth headers:', req.headers);
-    console.log('User from token:', req.user);
-    
-    console.log('Fetching users from MongoDB...');
     const users = await User.find({}, '-password').populate('roles');
-    console.log(`Found ${users.length} users`);
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
     res.status(500).json({ message: 'Failed to fetch users' });
   }
 });
 
-// Get user by ID
+// Get user by ID (user can get their own info, or admin can get any)
 router.get('/:id', async (req, res) => {
   try {
+    if (req.user.userId !== req.params.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
     const user = await User.findById(req.params.id, '-password').populate('roles');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
     res.status(500).json({ message: 'Failed to fetch user' });
   }
 });
 
-// Create new user
-router.post('/', async (req, res) => {
+// Create new user (admin only)
+router.post('/', adminOnly, async (req, res) => {
   try {
     const { email, password, firstName, lastName, roles } = req.body;
     const user = new User({
@@ -51,20 +45,22 @@ router.post('/', async (req, res) => {
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    console.error('Error creating user:', error);
     res.status(500).json({ message: 'Failed to create user' });
   }
 });
 
-// Update user
+// Update user (user can update their own info, or admin can update any)
 router.put('/:id', async (req, res) => {
   try {
-    const { email, firstName, lastName, roles, isActive } = req.body;
+    if (req.user.userId !== req.params.id && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const { email, firstName, lastName, roles, isActive } = req.body;
     user.email = email || user.email;
     user.firstName = firstName || user.firstName;
     user.lastName = lastName || user.lastName;
@@ -74,13 +70,12 @@ router.put('/:id', async (req, res) => {
     await user.save();
     res.json({ message: 'User updated successfully' });
   } catch (error) {
-    console.error('Error updating user:', error);
     res.status(500).json({ message: 'Failed to update user' });
   }
 });
 
-// Delete user
-router.delete('/:id', async (req, res) => {
+// Delete user (admin only)
+router.delete('/:id', adminOnly, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) {
@@ -88,7 +83,6 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
     res.status(500).json({ message: 'Failed to delete user' });
   }
 });

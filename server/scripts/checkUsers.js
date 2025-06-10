@@ -1,10 +1,15 @@
 const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const User = require('../models/User');
 
 async function checkUsers() {
   try {
     // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://jcoler:ACMghKUtN0K27SOx@mirabel-ai.jvpyb.mongodb.net/mirabel-api?retryWrites=true&w=majority';
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error('MONGODB_URI is not defined in the .env file');
+    }
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
     

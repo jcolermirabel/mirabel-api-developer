@@ -1,1 +1,0 @@
-{"email":"jcoler@mirabeltechnologies.com","password":"$2a$10$25g50o1LgxTMY/NoRNXmIOkCK7otXZQKmvdi/ozC9uXviFPVBhjza","firstName":"Jestin","lastName":"Coler","roles":[],"isAdmin":true,"createdAt":{"$date":{"$numberLong":"1732333947638"}},"__v":0,"updatedAt":{"$date":{"$numberLong":"1732457373687"}},"isActive":true,"lastLogin":{"$date":{"$numberLong":"1732457373686"}}}

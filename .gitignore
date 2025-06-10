@@ -1,14 +1,19 @@
 # Environment files
 .env
-server/.env
 .env.*
 !.env.example
+server/.env
+server/.env.*
 !server/.env.example
-server/.env.production
-server/.env.backup
-server/env_backup/
-server/app.js.backup
-.env.production
+server/env_backup
+app.js.backup
+
+# User data
+user.json
+
+# Temp files
+temp.js
+temp.txt
 
 # Dependencies
 node_modules/

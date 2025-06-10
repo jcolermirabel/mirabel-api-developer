@@ -22,7 +22,7 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-const isAdmin = (req, res, next) => {
+const adminOnly = (req, res, next) => {
   try {
     if (!req.user || !req.user.isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });
@@ -36,5 +36,5 @@ const isAdmin = (req, res, next) => {
 
 module.exports = { 
   authMiddleware,
-  isAdmin
+  adminOnly
 }; 

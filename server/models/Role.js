@@ -31,7 +31,8 @@ const roleSchema = new Schema({
       GET: Boolean,
       POST: Boolean,
       PUT: Boolean,
-      DELETE: Boolean
+      DELETE: Boolean,
+      PATCH: Boolean
     }
   }],
   createdBy: {

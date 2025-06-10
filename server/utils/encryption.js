@@ -1,6 +1,16 @@
 const crypto = require('crypto');
 
 const IV_LENGTH = 16;
+const ALGORITHM = 'aes-256-cbc';
+
+// Helper function to derive a 32-byte key from the environment variable
+const getKey = () => {
+  const secret = process.env.ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  }
+  return crypto.createHash('sha256').update(String(secret)).digest();
+};
 
 const decryptDatabasePassword = (encryptedPassword) => {
   try {
@@ -9,19 +19,12 @@ const decryptDatabasePassword = (encryptedPassword) => {
     }
     
     const [encryptedHex, ivHex] = encryptedPassword.split(':');
-    
-    if (!process.env.ENCRYPTION_KEY) {
-      throw new Error('ENCRYPTION_KEY environment variable is not set');
-    }
+    const key = getKey();
     
     const iv = Buffer.from(ivHex, 'hex');
     const encrypted = Buffer.from(encryptedHex, 'hex');
     
-    const decipher = crypto.createDecipheriv(
-      'aes-256-cbc',
-      Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
-      iv
-    );
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     
     let decrypted = decipher.update(encrypted);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
@@ -46,17 +49,10 @@ const encryptDatabasePassword = (password) => {
       throw new Error('Invalid password format: ' + typeof password);
     }
     
-    if (!process.env.ENCRYPTION_KEY) {
-      throw new Error('ENCRYPTION_KEY environment variable is not set');
-    }
-
+    const key = getKey();
     const iv = crypto.randomBytes(IV_LENGTH);
     
-    const cipher = crypto.createCipheriv(
-      'aes-256-cbc',
-      Buffer.from(process.env.ENCRYPTION_KEY, 'hex'),
-      iv
-    );
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
     
     let encrypted = cipher.update(password);
     encrypted = Buffer.concat([encrypted, cipher.final()]);

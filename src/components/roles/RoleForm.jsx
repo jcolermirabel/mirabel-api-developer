@@ -30,7 +30,7 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
     name: role?.name || '',
     description: role?.description || '',
     isActive: role?.isActive ?? true,
-    service: role?.service || '',
+    serviceId: role?.serviceId || '',
     permissions: role?.permissions || []
   });
   
@@ -81,11 +81,11 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
   // Fetch database objects when service is selected
   useEffect(() => {
     const fetchDatabaseObjects = async () => {
-      if (!formData.service) return;
+      if (!formData.serviceId) return;
       
       setLoading(true);
       try {
-        const objects = await getDatabaseObjects(formData.service);
+        const objects = await getDatabaseObjects(formData.serviceId);
         setDatabaseObjects(objects);
       } catch (err) {
         setError('Failed to fetch database objects');
@@ -94,10 +94,10 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
       }
     };
 
-    if (activeStep === 1 && formData.service) {
+    if (activeStep === 1 && formData.serviceId) {
       fetchDatabaseObjects();
     }
-  }, [formData.service, activeStep]);
+  }, [formData.serviceId, activeStep]);
 
   const handleBasicInfoChange = (e) => {
     const { name, value, checked } = e.target;
@@ -110,17 +110,15 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
   const handleServiceChange = (e) => {
     setFormData(prev => ({
       ...prev,
-      service: e.target.value,
+      serviceId: e.target.value,
       permissions: [] // Reset permissions when service changes
     }));
   };
 
-  const handlePermissionChange = (objectName, objectType, action) => {
+  const handlePermissionChange = (objectName, action) => {
     setFormData(prev => {
       const permissions = [...prev.permissions];
-      const existingIndex = permissions.findIndex(p => 
-        p.objectName === objectName && p.objectType === objectType
-      );
+      const existingIndex = permissions.findIndex(p => p.objectName === objectName);
       
       if (existingIndex >= 0) {
         permissions[existingIndex] = {
@@ -133,13 +131,14 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
       } else {
         permissions.push({
           objectName,
-          objectType,
+          serviceId: prev.serviceId,
           actions: {
-            GET: action === 'GET',
-            POST: action === 'POST',
-            PUT: action === 'PUT',
-            PATCH: action === 'PATCH',
-            DELETE: action === 'DELETE'
+            GET: false,
+            POST: false,
+            PUT: false,
+            PATCH: false,
+            DELETE: false,
+            [action]: true
           }
         });
       }
@@ -157,7 +156,7 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
         name: formData.name,
         description: formData.description,
         isActive: formData.isActive,
-        service: formData.service,
+        serviceId: formData.serviceId,
         permissions: formData.permissions
       };
 
@@ -219,7 +218,7 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
               select
               fullWidth
               label="Select Service"
-              value={formData.service}
+              value={formData.serviceId || ''}
               onChange={handleServiceChange}
               margin="normal"
             >
@@ -247,16 +246,17 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
                   </TableHead>
                   <TableBody>
                     {Object.entries(databaseObjects).map(([type, objects]) =>
-                      objects.map(objectName => (
-                        <TableRow key={`${type}-${objectName}`}>
-                          <TableCell>{`${type}: ${objectName}`}</TableCell>
+                      objects.map(object => (
+                        <TableRow key={`${type}-${object.path}`}>
+                          <TableCell>{object.path}</TableCell>
                           {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(action => (
                             <TableCell key={action} align="center">
                               <Checkbox
-                                checked={formData.permissions.find(p => 
-                                  p.objectName === objectName && 
-                                  p.objectType === type)?.actions[action] || false}
-                                onChange={() => handlePermissionChange(objectName, type, action)}
+                                checked={
+                                  formData.permissions.find(p => p.objectName === object.path)
+                                    ?.actions[action] || false
+                                }
+                                onChange={() => handlePermissionChange(object.path, action)}
                               />
                             </TableCell>
                           ))}
@@ -316,7 +316,7 @@ const RoleForm = ({ role, onRoleSubmitted, onClose }) => {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={loading || !formData.service}
+            disabled={loading || !formData.serviceId}
           >
             {role ? 'Update Role' : 'Create Role'}
           </Button>

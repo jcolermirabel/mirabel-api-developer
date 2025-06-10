@@ -52,7 +52,7 @@ router.get('/:id/databases', async (req, res) => {
       port: connection.port,
       options: {
         encrypt: true,
-        trustServerCertificate: true,
+        trustServerCertificate: process.env.NODE_ENV !== 'production',
         connectTimeout: 15000
       }
     };

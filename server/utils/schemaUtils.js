@@ -93,21 +93,21 @@ const updateDatabaseObjects = async (serviceId, objects) => {
       name: proc.procedure_name || proc.name || '',
       schema: proc.schema_name || proc.schema || 'dbo',
       type: 'PROCEDURE',
-      path: `/${proc.schema_name || proc.schema || 'dbo'}.${proc.procedure_name || proc.name || ''}`
+      path: `/proc/${proc.procedure_name || proc.name || ''}`
     }));
     
     const transformedViews = objects.views.map(view => ({
       name: view.view_name || view.name || '',
       schema: view.schema_name || view.schema || 'dbo',
       type: 'VIEW',
-      path: `/${view.schema_name || view.schema || 'dbo'}.${view.view_name || view.name || ''}`
+      path: `/view/${view.view_name || view.name || ''}`
     }));
     
     const transformedTables = objects.tables.map(table => ({
       name: table.table_name || table.name || '',
       schema: table.schema_name || table.schema || 'dbo',
       type: 'TABLE',
-      path: `/${table.schema_name || table.schema || 'dbo'}.${table.table_name || table.name || ''}`
+      path: `/table/${table.table_name || table.name || ''}`
     }));
     
     console.log('Transformed object counts:', {

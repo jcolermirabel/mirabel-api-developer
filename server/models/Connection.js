@@ -51,7 +51,7 @@ connectionSchema.methods.testConnection = async function() {
       port: parseInt(this.port) || 1433,
       options: {
         encrypt: true,
-        trustServerCertificate: true,
+        trustServerCertificate: process.env.NODE_ENV !== 'production',
         connectTimeout: 30000
       }
     };

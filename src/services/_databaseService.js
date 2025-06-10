@@ -1,15 +1,10 @@
 import axios from 'axios';
-import { encryptDatabasePassword, decryptDatabasePassword } from '../utils/encryption';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
 export const createDatabaseConnection = async (connectionData) => {
   try {
-    const encryptedPassword = encryptDatabasePassword(connectionData.password);
-    const response = await axios.post(`${API_URL}/services`, {
-      ...connectionData,
-      password: encryptedPassword
-    }, {
+    const response = await axios.post(`${API_URL}/services`, connectionData, {
       headers: {
         'Authorization': `Bearer ${getToken()}`,
         'x-mirabel-api-key': process.env.REACT_APP_API_KEY
@@ -24,11 +19,7 @@ export const createDatabaseConnection = async (connectionData) => {
 
 export const testConnection = async (connectionData) => {
   try {
-    const encryptedPassword = encryptDatabasePassword(connectionData.password);
-    const response = await axios.post(`${API_URL}/services/test`, {
-      ...connectionData,
-      password: encryptedPassword
-    }, {
+    const response = await axios.post(`${API_URL}/services/test`, connectionData, {
       headers: {
         'Authorization': `Bearer ${getToken()}`,
         'x-mirabel-api-key': process.env.REACT_APP_API_KEY

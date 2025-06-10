@@ -25,7 +25,7 @@ $logsUrl = "$baseUrl/api/provisioning/logs"
 $statusUrl = "$baseUrl/api/provisioning/status"
 $loginUrl = "$baseUrl/api/auth/login"
 $email = "jcoler@mirabeltechnologies.com"
-$password = "admin123!@#"
+$password = Read-Host -Prompt "Enter your password for $email" -AsSecureString
 $connectionId = "6803a52986e6dbc91b5e7098"
 $userId = "6741517be060d76e29fec53e"
 $hostDatabase = "AWSSQL4"
@@ -38,7 +38,7 @@ Write-Host "Tier: $tier" -ForegroundColor White
 # Authenticate
 try {
     Write-Host "Authenticating to local server..." -ForegroundColor Gray
-    $authBody = @{ email = $email; password = $password } | ConvertTo-Json
+    $authBody = @{ email = $email; password = ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password))) } | ConvertTo-Json
     $authResponse = Invoke-RestMethod -Uri $loginUrl -Method Post -ContentType "application/json" -Body $authBody
     $jwtToken = $authResponse.token
     Write-Host "Authentication successful!" -ForegroundColor Green

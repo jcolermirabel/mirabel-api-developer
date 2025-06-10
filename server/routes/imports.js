@@ -5,11 +5,11 @@ const Role = require('../models/Role');
 const Application = require('../models/Application');
 const DatabaseObject = require('../models/DatabaseObject');
 const { generateApiKey, encryptDatabasePassword } = require('../utils/encryption');
-const { authMiddleware, isAdmin } = require('../middleware/auth');
+const { authMiddleware, adminOnly } = require('../middleware/auth');
 const databaseService = require('../services/databaseService');
 
 // POST /api/imports/bulk
-router.post('/bulk', authMiddleware, isAdmin, async (req, res) => {
+router.post('/bulk', authMiddleware, adminOnly, async (req, res) => {
   try {
     const results = {
       services: [],
@@ -104,7 +104,8 @@ router.post('/bulk', authMiddleware, isAdmin, async (req, res) => {
             GET: true,
             POST: false,
             PUT: false,
-            DELETE: false
+            DELETE: false,
+            PATCH: false
           }
         }));
         role.isActive = true;
@@ -123,7 +124,8 @@ router.post('/bulk', authMiddleware, isAdmin, async (req, res) => {
               GET: true,
               POST: false,
               PUT: false,
-              DELETE: false
+              DELETE: false,
+              PATCH: false
             }
           })),
           isActive: true,

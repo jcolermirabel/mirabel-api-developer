@@ -1,52 +1,79 @@
 const mongoose = require('mongoose');
+const { encryptDatabasePassword, decryptDatabasePassword } = require('../utils/encryption');
 const sql = require('mssql');
-const { decryptDatabasePassword } = require('../utils/encryption');
+const net = require('net');
 
-const serviceSchema = new mongoose.Schema({
+const connectionSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
-  host: { type: String, required: false },
-  port: { type: Number, required: false },
-  database: { type: String, required: true },
-  username: { type: String, required: false },
-  password: { type: String, required: false },
+  host: { type: String, required: true },
+  port: { type: Number, required: true },
+  username: { type: String, required: true },
+  password: { type: String, required: true },
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   failoverHost: { type: String, required: false },
-  connectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Connection', required: false },
 }, { timestamps: true });
 
-// Add method to execute stored procedure
-serviceSchema.methods.executeProcedure = async function(procedureName) {
+// Pre-save middleware to encrypt password
+connectionSchema.pre('save', function(next) {
+  // only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  // just to be safe, don't re-encrypt if it's already encrypted
+  // this is unlikely to happen given the above check, but good practice
   try {
-    const decryptedPassword = decryptDatabasePassword(this.password);
+    decryptDatabasePassword(this.password);
+    // if no error, it's already encrypted
+    return next();
+  } catch (e) {
+    // if decryption fails, it's a new plaintext password
+    this.password = encryptDatabasePassword(this.password);
+    next();
+  }
+});
+
+// Method to test connection
+connectionSchema.methods.testConnection = async function() {
+  try {
+    // If password is new (plain text), use it directly.
+    // If it's existing (encrypted), decrypt it.
+    const isEncrypted = this.password && this.password.includes(':');
+    const decryptedPassword = isEncrypted
+      ? decryptDatabasePassword(this.password)
+      : this.password;
     
     const config = {
       user: this.username,
       password: decryptedPassword,
       server: this.host,
-      database: this.database,
-      port: this.port,
+      port: parseInt(this.port) || 1433,
       options: {
         encrypt: true,
-        trustServerCertificate: true
+        trustServerCertificate: true,
+        connectTimeout: 30000
       }
     };
 
     const pool = await sql.connect(config);
-    const result = await pool.request().execute(procedureName);
-    await sql.close();
+    await pool.request().query('SELECT 1');
+    await pool.close();
     
-    return result.recordset;
+    return {
+      success: true,
+      message: 'Connection successful'
+    };
   } catch (error) {
-    console.error('Procedure execution error:', error);
-    throw new Error(`Failed to execute procedure: ${error.message}`);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };
 
-// Add a method to get the effective host
-serviceSchema.methods.getEffectiveHost = async function() {
-  const net = require('net');
-  
+// Method to get effective host (with failover support)
+connectionSchema.methods.getEffectiveHost = async function() {
   // Try primary host first
   try {
     await new Promise((resolve, reject) => {
@@ -109,4 +136,4 @@ serviceSchema.methods.getEffectiveHost = async function() {
   }
 };
 
-module.exports = mongoose.model('Service', serviceSchema); 
+module.exports = mongoose.model('Connection', connectionSchema); 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   TextField,
@@ -7,124 +7,106 @@ import {
   DialogContent,
   DialogActions,
   Alert,
-  CircularProgress
+  CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
-import { createService, testConnection, updateService, refreshServiceSchema } from '../../services/serviceService';
+import { createService, updateService } from '../../services/serviceService';
+import { getConnections } from '../../services/connectionService';
+import axios from 'axios';
+
+const getAuthHeaders = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  if (user && user.token) {
+    return { 
+      'Authorization': `Bearer ${user.token}`,
+      'x-mirabel-api-key': process.env.REACT_APP_API_KEY
+    };
+  }
+  return {};
+};
 
 const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
   const [formData, setFormData] = useState({
     name: service?.name || '',
-    host: service?.host || '',
-    failoverHost: service?.failoverHost || '',
-    port: service?.port || '',
-    database: service?.database || '',
-    username: service?.username || '',
-    password: service?.password || '',
-    instanceName: service?.instanceName || ''
+    connectionId: service?.connectionId || '',
+    database: service?.database || ''
   });
+  const [connections, setConnections] = useState([]);
+  const [databases, setDatabases] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
-  const [passwordChanged, setPasswordChanged] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
+  const [loadingConnections, setLoadingConnections] = useState(false);
+  const [loadingDatabases, setLoadingDatabases] = useState(false);
+
+  useEffect(() => {
+    const fetchConnections = async () => {
+      setLoadingConnections(true);
+      try {
+        const fetchedConnections = await getConnections();
+        setConnections(fetchedConnections);
+      } catch (err) {
+        setError('Failed to load connections.');
+      } finally {
+        setLoadingConnections(false);
+      }
+    };
+    fetchConnections();
+  }, []);
+
+  const handleConnectionChange = async (connectionId) => {
+    setFormData(prev => ({
+      ...prev,
+      connectionId,
+      database: '' // Reset database on new connection
+    }));
+    setDatabases([]);
+
+    if (!connectionId) {
+      return;
+    }
+    
+    setLoadingDatabases(true);
+    setError('');
+    try {
+      const response = await axios.get(
+        `/api/connections/${connectionId}/databases`,
+        { headers: getAuthHeaders() }
+      );
+      setDatabases(response.data);
+    } catch (err) {
+      setError('Failed to fetch databases for this connection.');
+    } finally {
+      setLoadingDatabases(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'password') {
-      setPasswordChanged(true);
-      // Check for colons in password
-      if (value.includes(':')) {
-        setPasswordError('Password cannot contain colon (:) characters');
-      } else {
-        setPasswordError('');
-      }
-    }
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleTestConnection = async () => {
-    setTesting(true);
-    setError('');
-    setSuccess('');
-    try {
-      const testConfig = {
-        name: formData.name,
-        host: formData.host,
-        port: formData.port,
-        database: formData.database,
-        username: formData.username,
-        password: formData.password
-      };
-      
-      const response = await testConnection(testConfig);
-      if (response.success) {
-        setSuccess('Connection successful!');
-      } else {
-        setError(response.error || 'Connection failed');
-      }
-    } catch (error) {
-      setError(error.message || 'Connection failed');
-    } finally {
-      setTesting(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Prevent submission if password contains colon
-    if (passwordChanged && formData.password.includes(':')) {
-      setError('Password cannot contain colon (:) characters');
-      return;
-    }
-    
     setSaving(true);
     setError('');
     setSuccess('');
     try {
-      const dataToSubmit = {
-        ...formData,
-        password: passwordChanged ? formData.password : service?.password
-      };
-      
-      console.log('ServiceForm - submitting password:', {
-        isChanged: passwordChanged,
-        hasColon: dataToSubmit.password.includes(':'),
-        length: dataToSubmit.password.length
-      });
-      
       if (service) {
-        await updateService(service._id, dataToSubmit);
-        
-        // After successful update, refresh the schema
-        try {
-          const schemaResult = await refreshServiceSchema(service._id);
-          setSuccess(`Service updated and schema refreshed: ${schemaResult.objectCount.total} objects found (${schemaResult.objectCount.tables} tables, ${schemaResult.objectCount.views} views, ${schemaResult.objectCount.procedures} procedures)`);
-          
-          // Wait for user to see the success message before closing
-          setTimeout(() => {
-            onServiceSubmitted();
-          }, 3000);
-        } catch (schemaError) {
-          console.error('Error refreshing schema:', schemaError);
-          setSuccess('Service updated successfully, but schema refresh failed.');
-          setTimeout(() => {
-            onServiceSubmitted();
-          }, 3000);
-        }
+        await updateService(service._id, formData);
       } else {
-        await createService(dataToSubmit);
-        setSuccess('Service created successfully!');
-        setTimeout(() => {
-          onServiceSubmitted();
-        }, 2000);
+        await createService(formData);
       }
+      onServiceSubmitted();
     } catch (err) {
       setError(err.message);
+    } finally {
       setSaving(false);
     }
   };
@@ -132,26 +114,11 @@ const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
   return (
     <Box component="form" onSubmit={handleSubmit}>
       <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
-        {error && (
-          <Alert 
-            severity="error"
-            sx={{ mb: 2 }}
-          >
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert 
-            severity="success"
-            sx={{ mb: 2 }}
-          >
-            {success}
-          </Alert>
-        )}
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', pt: '1rem !important' }}>
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">{success}</Alert>}
 
         <TextField
-          margin="dense"
           label="Service Name"
           name="name"
           fullWidth
@@ -159,96 +126,70 @@ const ServiceForm = ({ service, onServiceSubmitted, title, onCancel }) => {
           value={formData.name}
           onChange={handleChange}
         />
-        <TextField
-          margin="dense"
-          label="Host"
-          name="host"
-          fullWidth
-          required
-          value={formData.host}
-          onChange={handleChange}
-          helperText="Primary host address"
-        />
-        <TextField
-          margin="dense"
-          label="Failover Host"
-          name="failoverHost"
-          fullWidth
-          value={formData.failoverHost}
-          onChange={handleChange}
-          helperText="Optional backup host address"
-        />
-        <TextField
-          margin="dense"
-          label="Port"
-          name="port"
-          type="number"
-          fullWidth
-          required
-          value={formData.port}
-          onChange={handleChange}
-        />
-        <TextField
-          margin="dense"
-          label="Database"
-          name="database"
-          fullWidth
-          required
-          value={formData.database}
-          onChange={handleChange}
-        />
-        <TextField
-          margin="dense"
-          label="Username"
-          name="username"
-          fullWidth
-          required
-          value={formData.username}
-          onChange={handleChange}
-        />
-        <TextField
-          margin="dense"
-          label="Password"
-          name="password"
-          type="password"
-          fullWidth
-          required
-          value={passwordChanged ? formData.password : '••••••••'}
-          onChange={handleChange}
-          error={passwordChanged && !!passwordError}
-          helperText={passwordChanged && passwordError ? passwordError : "Password will only be updated if changed"}
-        />
-        <TextField
-          margin="dense"
-          label="Instance Name (Optional)"
-          name="instanceName"
-          fullWidth
-          value={formData.instanceName}
-          onChange={handleChange}
-          helperText="Leave empty if using IP and port"
-        />
+
+        <FormControl fullWidth required>
+          <InputLabel id="connection-select-label">Connection</InputLabel>
+          <Select
+            labelId="connection-select-label"
+            id="connection-select"
+            value={formData.connectionId}
+            label="Connection"
+            onChange={(e) => handleConnectionChange(e.target.value)}
+            disabled={loadingConnections}
+          >
+            {loadingConnections ? (
+              <MenuItem value="">
+                <em>Loading connections...</em>
+              </MenuItem>
+            ) : (
+              connections.map((c) => (
+                <MenuItem key={c._id} value={c._id}>
+                  {c.name} ({c.host})
+                </MenuItem>
+              ))
+            )}
+          </Select>
+        </FormControl>
+
+        <FormControl fullWidth required disabled={!formData.connectionId || loadingDatabases}>
+          <InputLabel id="database-select-label">Database</InputLabel>
+          <Select
+            labelId="database-select-label"
+            id="database-select"
+            value={formData.database}
+            label="Database"
+            name="database"
+            onChange={handleChange}
+          >
+            {loadingDatabases ? (
+              <MenuItem value="">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <em>Loading databases...</em>
+                </Box>
+              </MenuItem>
+            ) : (
+              databases.map((db) => (
+                <MenuItem key={db} value={db}>
+                  {db}
+                </MenuItem>
+              ))
+            )}
+          </Select>
+        </FormControl>
+
       </DialogContent>
       <DialogActions>
-        <Button
-          onClick={handleTestConnection}
-          disabled={saving || testing}
-          startIcon={testing && <CircularProgress size={20} />}
-        >
-          Test Connection
-        </Button>
-        <Button
-          onClick={onCancel}
-          disabled={saving}
-        >
+        <Button onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
         <Button
           type="submit"
           variant="contained"
-          disabled={saving || (passwordChanged && !!passwordError)}
+          disabled={saving || !formData.connectionId || !formData.database}
           startIcon={saving && <CircularProgress size={20} />}
         >
-          {service ? "Update Service" : "Create Service"}
+          {saving ? 'Saving...' : 'Save Service'}
         </Button>
       </DialogActions>
     </Box>

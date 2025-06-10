@@ -92,6 +92,7 @@ app.use('/api/users', persistentAuth, require('./routes/users'));
 app.use('/api/roles', persistentAuth, require('./routes/roles'));
 app.use('/api/applications', persistentAuth, require('./routes/applications'));
 app.use('/api/services', persistentAuth, require('./routes/services'));
+app.use('/api/connections', persistentAuth, require('./routes/connections'));
 app.use('/api/reports', persistentAuth, require('./routes/reports'));
 app.use('/api/dashboard', persistentAuth, require('./routes/dashboard'));
 app.use('/api/documentation', persistentAuth, require('./routes/documentation'));

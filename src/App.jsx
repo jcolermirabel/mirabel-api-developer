@@ -17,6 +17,7 @@ import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import UserSettings from './components/settings/UserSettings';
 import AdminSettings from './components/settings/AdminSettings';
 import ConnectionList from './components/connections/ConnectionList';
+import { NotificationProvider } from './context/NotificationContext';
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -51,42 +52,44 @@ function App() {
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
       <SelectionProvider>
-        <Routes>
-          <Route 
-            path="/" 
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
-          />
-          
-          <Route 
-            path="/login" 
-            element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
-          />
-          
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/connections" element={<ProtectedRoute><ConnectionList /></ProtectedRoute>} />
-          <Route path="/services" element={<ProtectedRoute><ServiceList /></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
-          <Route path="/roles" element={<ProtectedRoute><RoleList /></ProtectedRoute>} />
-          <Route path="/roles/create" element={<ProtectedRoute><CreateRole mode="create" /></ProtectedRoute>} />
-          <Route path="/roles/edit/:id" element={<ProtectedRoute><RoleEdit /></ProtectedRoute>} />
-          <Route path="/applications" element={<ProtectedRoute><ApplicationList /></ProtectedRoute>} />
-          <Route path="/documentation" element={<ProtectedRoute><ApiDocViewer /></ProtectedRoute>} />
-          <Route path="/reports/api-usage" element={<ProtectedRoute><ApiUsageReport /></ProtectedRoute>} />
-          <Route path="/user-settings" element={
-            <ProtectedRoute>
-              <UserSettings />
-            </ProtectedRoute>
-          } />
-          <Route 
-            path="/admin-settings" 
-            element={
-              <ProtectedRoute requiredPermission="isAdmin">
-                <AdminSettings />
+        <NotificationProvider>
+          <Routes>
+            <Route 
+              path="/" 
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
+            />
+            
+            <Route 
+              path="/login" 
+              element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} 
+            />
+            
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/connections" element={<ProtectedRoute><ConnectionList /></ProtectedRoute>} />
+            <Route path="/services" element={<ProtectedRoute><ServiceList /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
+            <Route path="/roles" element={<ProtectedRoute><RoleList /></ProtectedRoute>} />
+            <Route path="/roles/create" element={<ProtectedRoute><CreateRole mode="create" /></ProtectedRoute>} />
+            <Route path="/roles/edit/:id" element={<ProtectedRoute><RoleEdit /></ProtectedRoute>} />
+            <Route path="/applications" element={<ProtectedRoute><ApplicationList /></ProtectedRoute>} />
+            <Route path="/documentation" element={<ProtectedRoute><ApiDocViewer /></ProtectedRoute>} />
+            <Route path="/reports/api-usage" element={<ProtectedRoute><ApiUsageReport /></ProtectedRoute>} />
+            <Route path="/user-settings" element={
+              <ProtectedRoute>
+                <UserSettings />
               </ProtectedRoute>
-            } 
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            } />
+            <Route 
+              path="/admin-settings" 
+              element={
+                <ProtectedRoute requiredPermission="isAdmin">
+                  <AdminSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </NotificationProvider>
       </SelectionProvider>
     </LocalizationProvider>
   );

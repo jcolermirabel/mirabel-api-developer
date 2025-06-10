@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Part 1</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <style>
+        /* Same styles as before */
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --code-bg: #1f2937;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+
+        .accordion {
+            margin-bottom: 1rem;
+        }
+
+        .accordion-header {
+            background: var(--background-color);
+            padding: 1rem;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion-header:hover {
+            background: #f9fafb;
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .accordion-content.active {
+            display: block;
+        }
+
+        .endpoint {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .endpoint-header {
+            margin-bottom: 1rem;
+        }
+
+        .endpoint-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .endpoint-meta {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            color: #ffffff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .code-label {
+            color: #93c5fd;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-header.active .chevron {
+            transform: rotate(180deg);
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+        }
+
+        .pagination a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .pagination a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Documentation</h1>
+        
+        <div class="accordion">
+            <!-- Users Section -->
+            <div class="accordion-section">
+                <div class="accordion-header">
+                    Users
+                    <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <div class="endpoint-title">Users Get</div>
+                            <div class="endpoint-meta">
+                                <div><strong>Endpoint:</strong> /api_UsersGet</div>
+                                <div><strong>Method:</strong> GET</div>
+                                <div>Retrieves user information with optional filtering and pagination</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Parameters</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>enabled</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by user enabled status [-2 (All), 0 (Disabled), 1 (Enabled)]</td>
+                                </tr>
+                                <tr>
+                                    <td>deptID</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by department ID [-2 (All), > 0 (Specific department)]</td>
+                                </tr>
+                                <tr>
+                                    <td>employeeID</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by employee ID [-2 (All), > 0 (Specific employee)]</td>
+                                </tr>
+                                <tr>
+                                    <td>PageNumber</td>
+                                    <td>varchar(10)</td>
+                                    <td>Page number for pagination [> 0], Page size: 100 records</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Examples</div>
+                        <div class="code-block">
+                            <div class="code-label">PowerShell:</div>
+                            <pre><code class="language-powershell">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_UsersGet?enabled=1&deptID=2&employeeID=&PageNumber=1" -Headers $headers</code></pre>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-label">Bash:</div>
+                            <pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_UsersGet?enabled=1&deptID=2&employeeID=&PageNumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+                        </div>
+
+                        <div class="section-title">Sample Response</div>
+                        <div class="code-block">
+                            <pre><code class="language-json">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "EmployeeID": 1,
+            "FirstName": "John",
+            "LastName": "Smith",
+            "Email": "john.smith@company.com",
+            "Title": "Sales Manager",
+            "Department": "Sales"
+        }
+    ]
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contacts Section -->
+            <div class="accordion-section">
+                <div class="accordion-header">
+                    Contacts
+                    <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <!-- Contact Search Endpoint -->
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <div class="endpoint-title">Contact Search</div>
+                            <div class="endpoint-meta">
+                                <div><strong>Endpoint:</strong> /api_ContactSearch</div>
+                                <div><strong>Method:</strong> GET</div>
+                                <div>Search for contacts with various filters</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Parameters</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>customerID</td>
+                                    <td>int</td>
+                                    <td>Filter by customer ID [-2 (All), > 0 (Specific customer)]</td>
+                                </tr>
+                                <tr>
+                                    <td>repID</td>
+                                    <td>int</td>
+                                    <td>Filter by representative ID [-2 (All), > 0 (Specific rep)]</td>
+                                </tr>
+                                <tr>
+                                    <td>fromdate</td>
+                                    <td>datetime</td>
+                                    <td>Start date for search range (YYYY-MM-DD)</td>
+                                </tr>
+                                <tr>
+                                    <td>todate</td>
+                                    <td>datetime</td>
+                                    <td>End date for search range (YYYY-MM-DD)</td>
+                                </tr>
+                                <tr>
+                                    <td>pagenumber</td>
+                                    <td>int</td>
+                                    <td>Page number for pagination [> 0], Page size: 1000 records</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Examples</div>
+                        <div class="code-block">
+                            <div class="code-label">PowerShell:</div>
+                            <pre><code class="language-powershell">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactSearch?customerID=12&repID=5&fromdate=2024-01-01&todate=2024-12-31&pagenumber=1" -Headers $headers</code></pre>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-label">Bash:</div>
+                            <pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactSearch?customerID=12&repID=5&fromdate=2024-01-01&todate=2024-12-31&pagenumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+                        </div>
+
+                        <div class="section-title">Sample Response</div>
+                        <div class="code-block">
+                            <pre><code class="language-json">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "CustomerID": 12,
+            "Customer": "Acme Corp",
+            "FirstName": "Robert",
+            "LastName": "Johnson",
+            "Address1": "789 Pine Street",
+            "Address2": "Suite 300",
+            "City": "New York",
+            "State": "NY",
+            "Zip": "10001",
+            "Country": "USA",
+            "Phone": "555-0126",
+            "Phone2": "555-0127",
+            "Email": "robert.j@acmecorp.com",
+            "URL": "www.acmecorp.com",
+            "DateAdded": "2023-06-15T10:30:00",
+            "Rep": "Sarah Wilson"
+        }
+    ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Contacts Deleted Get Endpoint -->
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <div class="endpoint-title">Contacts Deleted Get</div>
+                            <div class="endpoint-meta">
+                                <div><strong>Endpoint:</strong> /api_ContactsDeletedGet</div>
+                                <div><strong>Method:</strong> GET</div>
+                                <div>Retrieves deleted contact information with filtering and pagination</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Parameters</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>customerID</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by customer ID [-2 (All), > 0 (Specific customer)]</td>
+                                </tr>
+                                <tr>
+                                    <td>fromDate</td>
+                                    <td>varchar(50)</td>
+                                    <td>Start date for deletion period (YYYY-MM-DD)</td>
+                                </tr>
+                                <tr>
+                                    <td>toDate</td>
+                                    <td>varchar(50)</td>
+                                    <td>End date for deletion period (YYYY-MM-DD)</td>
+                                </tr>
+                                <tr>
+                                    <td>pageNumber</td>
+                                    <td>varchar(10)</td>
+                                    <td>Page number for pagination [> 0], Page size: 100 records</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Examples</div>
+                        <div class="code-block">
+                            <div class="code-label">PowerShell:</div>
+                            <pre><code class="language-powershell">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactsDeletedGet?customerID=35&fromDate=2023-01-01&toDate=2023-12-31&pageNumber=1" -Headers $headers</code></pre>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-label">Bash:</div>
+                            <pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactsDeletedGet?customerID=35&fromDate=2023-01-01&toDate=2023-12-31&pageNumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+                        </div>
+
+                        <div class="section-title">Sample Response</div>
+                        <div class="code-block">
+                            <pre><code class="language-json">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "gsCustomersID": 35,
+            "Customer": "Tech Solutions Inc",
+            "Prefix": "Mr",
+            "FirstName": "David",
+            "LastName": "Anderson",
+            "Suffix": "",
+            "Title": "CTO",
+            "Address1": "567 Tech Parkway",
+            "Address2": "Floor 4",
+            "City": "Austin",
+            "State": "TX",
+            "Zip": "78701",
+            "Country": "USA",
+            "Email": "david.a@techsolutions.com",
+            "Phone": "555-0129",
+            "PhoneXtn": "123",
+            "Phone2": "555-0130",
+            "URL": "www.techsolutions.com",
+            "ContactType": "Primary",
+            "LastContract": "2023-05-15",
+            "LastContact": "2023-06-01",
+            "TwitterHandle": "@davidtech",
+            "FacebookID": "david.anderson",
+            "LinkedIn": "david-anderson-tech",
+            "DateAdded": "2022-01-10T08:30:00",
+            "ParentID": null,
+            "Rep": "Michael Adams"
+        }
+    ]
+}</code></pre>
+                        </div>
+                    </div>
+
+	<!-- Contact Priority Get Endpoint -->
+	<div class="endpoint">
+		<div class="endpoint-header">
+			<div class="endpoint-title">Contact Priority Get</div>
+			<div class="endpoint-meta">
+				<div><strong>Endpoint:</strong> /api_ContactPriorityGet</div>
+				<div><strong>Method:</strong> GET</div>
+				<div>Retrieves contact priorities with optional filtering</div>
+			</div>
+		</div>
+
+		<div class="section-title">Parameters</div>
+		<table>
+			<thead>
+				<tr>
+					<th>Parameter</th>
+					<th>Type</th>
+					<th>Description</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>PriorityID</td>
+					<td>varchar(10)</td>
+					<td>Filter by priority ID [NULL/Empty (All), > 0 (Specific priority)]</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="section-title">Response Status Codes</div>
+		<table>
+			<thead>
+				<tr>
+					<th>Status Code</th>
+					<th>Description</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>200</td>
+					<td>Success - Data retrieved successfully</td>
+				</tr>
+				<tr>
+					<td>400</td>
+					<td>Bad Request - Invalid parameter format or value</td>
+				</tr>
+				<tr>
+					<td>404</td>
+					<td>Not Found - Specified priority not found</td>
+				</tr>
+				<tr>
+					<td>500</td>
+					<td>Server Error - Internal server error occurred</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<div class="section-title">Examples</div>
+		<div class="code-block">
+			<div class="code-label">PowerShell:</div>
+			<pre><code class="language-powershell">$headers = @{
+		"X-DreamFactory-API-Key" = "apikeyvalue"
+	}
+
+	Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactPriorityGet?PriorityID=4" -Headers $headers</code></pre>
+		</div>
+
+		<div class="code-block">
+			<div class="code-label">Bash:</div>
+			<pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactPriorityGet?PriorityID=4" \
+		-H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+		</div>
+
+		<div class="section-title">Success Response Example</div>
+		<div class="code-block">
+			<pre><code class="language-json">{
+		"StatusCode": 200,
+		"Message": "Success",
+		"Data": [
+			{
+				"PriorityID": 4,
+				"Priority": "High"
+			}
+		]
+	}</code></pre>
+		</div>
+
+		<div class="section-title">Error Response Example</div>
+		<div class="code-block">
+			<pre><code class="language-json">{
+		"StatusCode": 400,
+		"Message": "Invalid PriorityID parameter format",
+		"Data": null
+	}</code></pre>
+		</div>
+
+		<div class="section-title">Notes</div>
+		<ul>
+			<li>The endpoint retrieves contact priority information from the system</li>
+			<li>If no PriorityID is specified, all available priorities will be returned</li>
+			<li>The PriorityID parameter must be either empty/null or a valid positive integer</li>
+			<li>Invalid PriorityID values will result in a 400 Bad Request response</li>
+			<li>Requesting a non-existent PriorityID will result in a 404 Not Found response</li>
+		</ul>
+	</div>
+	</div>
+	</div>
+            <!-- Products Section -->
+            <div class="accordion-section">
+                <div class="accordion-header">
+                    Products
+                    <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <div class="endpoint-title">Products Get</div>
+                            <div class="endpoint-meta">
+                                <div><strong>Endpoint:</strong> /api_ProductsGet</div>
+                                <div><strong>Method:</strong> GET</div>
+                                <div>Retrieves product information with optional filtering for product type and active status</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Parameters</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Default</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>ProductTypeID</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by product type [-2 (All), > 0 (Specific product type)]</td>
+                                    <td>-2</td>
+                                </tr>
+                                <tr>
+                                    <td>IsActive</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by active status [-2 (All), 0 (Inactive), 1 (Active)]</td>
+                                    <td>-2</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Status Codes</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Status Code</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>200</td>
+                                    <td>Success - Data retrieved successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>400</td>
+                                    <td>Bad Request - Invalid parameter format or value</td>
+                                </tr>
+                                <tr>
+                                    <td>404</td>
+                                    <td>Not Found - Product type not found</td>
+                                </tr>
+                                <tr>
+                                    <td>500</td>
+                                    <td>Server Error - Internal server error occurred</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Examples</div>
+                        <div class="code-block">
+                            <div class="code-label">PowerShell:</div>
+                            <pre><code class="language-powershell">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductsGet?ProductTypeID=&IsActive=1" -Headers $headers</code></pre>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-label">Bash:</div>
+                            <pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductsGet?ProductTypeID=&IsActive=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+                        </div>
+
+                        <div class="section-title">Sample Response</div>
+                        <div class="code-block">
+                            <pre><code class="language-json">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "ProductID": 1,
+            "Product": "Digital Magazine Pro",
+            "SubProductType": "Digital",
+            "IssueSet": "Monthly"
+        },
+        {
+            "ProductID": 2,
+            "Product": "Print Quarterly",
+            "SubProductType": "Print",
+            "IssueSet": "Quarterly"
+        }
+    ]
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Product Types Get Endpoint -->
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <div class="endpoint-title">Product Types Get</div>
+                            <div class="endpoint-meta">
+                                <div><strong>Endpoint:</strong> /api_ProductTypesGet</div>
+                                <div><strong>Method:</strong> GET</div>
+                                <div>Retrieves enabled product type information with optional filtering</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">Parameters</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Parameter</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Default</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>ProductTypeID</td>
+                                    <td>varchar(10)</td>
+                                    <td>Filter by product type [-2 (All), > 0 (Specific product type)]</td>
+                                    <td>-2</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Status Codes</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Status Code</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>200</td>
+                                    <td>Success - Data retrieved successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>400</td>
+                                    <td>Bad Request - Invalid parameter format</td>
+                                </tr>
+                                <tr>
+                                    <td>404</td>
+                                    <td>Not Found - Specified product type not found</td>
+                                </tr>
+                                <tr>
+                                    <td>500</td>
+                                    <td>Server Error - Internal server error occurred</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="section-title">Examples</div>
+                        <div class="code-block">
+                            <div class="code-label">PowerShell:</div>
+                            <pre><code class="language-powershell">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductTypesGet?ProductTypeID=" -Headers $headers</code></pre>
+                        </div>
+
+                        <div class="code-block">
+                            <div class="code-label">Bash:</div>
+                            <pre><code class="language-bash">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductTypesGet?ProductTypeID=-2" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</code></pre>
+                        </div>
+
+                        <div class="section-title">Sample Response</div>
+                        <div class="code-block">
+                            <pre><code class="language-json">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "ProductTypeID": 3,
+            "ProductType": "Digital"
+        },
+        {
+            "ProductTypeID": 1,
+            "ProductType": "Print"
+        }
+    ]
+}</code></pre>
+                        </div>
+
+                        <div class="section-title">Notes</div>
+                        <ul>
+                            <li>Only returns enabled product types (where isenabled = 1)</li>
+                            <li>The ProductTypeID parameter is optional and defaults to -2 (all enabled types)</li>
+                            <li>Empty strings and NULL values are treated as the default value (-2)</li>
+                            <li>ProductTypeID must be either -2 (all) or a valid positive integer</li>
+                            <li>Results are returned in raw table format for API layer handling</li>
+                            <li>The endpoint will return a 404 error if a specific ProductTypeID is requested but not found</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize syntax highlighting
+        hljs.highlightAll();
+
+        // Add accordion functionality
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling;
+                const isActive = header.classList.contains('active');
+                
+                // Close all sections
+                document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
+                document.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('active'));
+                
+                // Toggle clicked section
+                if (!isActive) {
+                    header.classList.add('active');
+                    content.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

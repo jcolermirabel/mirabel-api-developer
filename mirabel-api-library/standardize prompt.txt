@@ -1,0 +1,126 @@
+Please analyze and update this stored procedure to match these requirements:
+
+Input parameters:
+- Handle empty strings and nulls appropriately 
+- Validate parameter formats and value ranges
+- Return appropriate error codes/messages without using error tables
+- All stored procedures should include @pagenumber for paging at 1000 rows.
+	Pagenumber should use a contant format of:
+    -- Constants
+    DECLARE @RowsPerPage INT = 1000;
+    
+    BEGIN TRY
+        DECLARE @PriorityID_int INT,
+                @PageNumber_int INT;
+        -- Convert and validate PageNumber
+        IF @PageNumber IS NULL OR @PageNumber = ''
+            SET @PageNumber_int = 1
+        ELSE IF ISNUMERIC(@PageNumber) = 1
+        BEGIN
+            SET @PageNumber_int = CAST(@PageNumber AS INT);
+            IF @PageNumber_int < 1
+            BEGIN
+                SELECT 400 AS ResultCode, 'Page number must be greater than 0.' AS ResultMessage;
+                RETURN;
+            END
+        END
+        ELSE
+        BEGIN
+            SELECT 400 AS ResultCode, 'Invalid PageNumber format. Must be numeric.' AS ResultMessage;
+            RETURN;
+        END
+
+Return format:
+- Raw table results for API layer handling
+- Success: Return data in table format
+- Error: Return ResultCode (int) and ResultMessage (string) only
+
+Status codes (for API layer):
+- 200: Success
+- 400: Bad request/validation errors 
+- 401: Unauthorized
+- 403: Forbidden 
+- 404: Resource not found
+- 500: Internal server error
+
+Documentation requirements:
+- Clear parameter descriptions
+- Value ranges/constraints
+- Return format specification
+- Example usage
+- Response examples for both success/error cases
+
+Additional:
+- No JSON/XML formatting in stored procedure
+- No dynamic SQL (use parameterized queries)
+- Standard parameter naming
+- Clear code organization
+- Helpful inline comments
+
+Example documentation:
+
+ /*
+ =============================================
+ API Documentation - mc_InvoicesGet
+ Description:    Retrieves invoice information with optional filtering and pagination
+ 
+ Parameters:
+   @InvoiceDateFrom  - Optional. Start date for invoice date filtering
+                      Format: DateTime (YYYY-MM-DD)
+                      Default: '1900-01-01'
+   @InvoiceDateTo    - Optional. End date for invoice date filtering
+                      Format: DateTime (YYYY-MM-DD)
+                      Default: '9999-12-31'
+   @CreateDateFrom   - Optional. Start date for creation date filtering
+                      Format: DateTime (YYYY-MM-DD)
+                      Default: '1900-01-01'
+   @CreateDateTo     - Optional. End date for creation date filtering
+                      Format: DateTime (YYYY-MM-DD)
+                      Default: '9999-12-31'
+   @ProductID        - Optional. Filter by product ID
+                      Values: NULL (All), > 0 (Specific product)
+                      Default: NULL
+   @IssueID          - Optional. Filter by issue ID
+                      Values: NULL (All), > 0 (Specific issue)
+                      Default: NULL
+   @PageNumber       - Optional. Page number for pagination
+                      Values: > 0
+                      Default: 1
+                      Page size: 1000 records
+ 
+ Returns:
+ Success: Table with columns
+   CustomerID        - Customer identifier
+   InvoiceID         - Invoice identifier
+   InvoiceNumber     - Invoice number
+   InvoiceDate       - Date the invoice was issued
+   CreateDate        - Date the invoice was created
+   DateLastModified  - Date the invoice was last modified
+   DueDate           - Invoice due date
+   OrderID           - Order/Contract identifier
+   ProductID         - Product identifier
+   Product           - Product name
+   IssueID           - Issue identifier
+   IssueName         - Issue name
+   IssueYear         - Issue year
+   IssueDate         - Issue date
+   Amount            - Invoice amount
+   BarterAmount      - Barter amount
+
+ Error: Table with columns
+   ResultCode        - Status code (400, 404, 500, etc.)
+   ResultMessage     - Description of the error
+
+ Status Codes:
+   200 - Success (implicit for data return)
+   400 - Bad request (invalid parameters)
+   404 - Resource not found
+   500 - Server error
+
+ Example Usage:
+ EXEC mc_InvoicesGet @InvoiceDateFrom = '2023-01-01', @InvoiceDateTo = '2023-12-31'
+ EXEC mc_InvoicesGet @ProductID = 5, @PageNumber = 2
+ EXEC mc_InvoicesGet @IssueID = 10, @CreateDateFrom = '2023-06-01'
+ =============================================
+
+*/

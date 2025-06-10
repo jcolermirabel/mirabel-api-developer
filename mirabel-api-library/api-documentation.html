@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c5282;
+        }
+        .endpoint {
+            margin-bottom: 40px;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .parameters {
+            margin: 20px 0;
+        }
+        .curl {
+            background: #2d3748;
+            color: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .command {
+            white-space: pre;
+            display: block;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Documentation</h1>
+    
+    <div class="endpoint">
+        <h2>Users Get</h2>
+        <p><strong>Endpoint:</strong> /api_UsersGet</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Retrieves user information with optional filtering and pagination</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>enabled</td>
+                <td>varchar(10)</td>
+                <td>Filter by user enabled status [-2 (All), 0 (Disabled), 1 (Enabled)]</td>
+            </tr>
+            <tr>
+                <td>deptID</td>
+                <td>varchar(10)</td>
+                <td>Filter by department ID [-2 (All), > 0 (Specific department)]</td>
+            </tr>
+            <tr>
+                <td>employeeID</td>
+                <td>varchar(10)</td>
+                <td>Filter by employee ID [-2 (All), > 0 (Specific employee)]</td>
+            </tr>
+            <tr>
+                <td>PageNumber</td>
+                <td>varchar(10)</td>
+                <td>Page number for pagination [> 0], Page size: 100 records</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_UsersGet?enabled=1&deptID=2&employeeID=&PageNumber=1" -Headers $headers</pre>
+
+            <strong>Bash:</strong>
+            <pre class="command">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_UsersGet?enabled=1&deptID=2&employeeID=&PageNumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</pre>
+
+            <h3>Sample Response</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "EmployeeID": 1,
+            "FirstName": "John",
+            "LastName": "Smith",
+            "Email": "john.smith@company.com",
+            "Title": "Sales Manager",
+            "Phone": "555-0123",
+            "Phone2": "555-0124",
+            "Street": "123 Main St",
+            "City": "Boston",
+            "St": "MA",
+            "Zip": "02108",
+            "IsAdmin": "Yes",
+            "IsEnabled": "Yes",
+            "Department": "Sales",
+            "DateAdded": "2023-01-15T09:30:00"
+        },
+        {
+            "EmployeeID": 2,
+            "FirstName": "Jane",
+            "LastName": "Doe",
+            "Email": "jane.doe@company.com",
+            "Title": "Marketing Director",
+            "Phone": "555-0125",
+            "Phone2": "",
+            "Street": "456 Oak Ave",
+            "City": "Chicago",
+            "St": "IL",
+            "Zip": "60601",
+            "IsAdmin": "No",
+            "IsEnabled": "Yes",
+            "Department": "Marketing",
+            "DateAdded": "2023-03-20T14:15:00"
+        }
+    ]
+}</pre>
+        </div>
+    </div>
+
+    <div class="endpoint">
+        <h2>Contact Search</h2>
+        <p><strong>Endpoint:</strong> /api_ContactSearch</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Search for contacts with various filters</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>customerID</td>
+                <td>int</td>
+                <td>Filter by customer ID [-2 (All), > 0 (Specific customer)]</td>
+            </tr>
+            <tr>
+                <td>repID</td>
+                <td>int</td>
+                <td>Filter by representative ID [-2 (All), > 0 (Specific rep)]</td>
+            </tr>
+            <tr>
+                <td>fromdate</td>
+                <td>datetime</td>
+                <td>Start date for search range (YYYY-MM-DD)</td>
+            </tr>
+            <tr>
+                <td>todate</td>
+                <td>datetime</td>
+                <td>End date for search range (YYYY-MM-DD)</td>
+            </tr>
+            <tr>
+                <td>pagenumber</td>
+                <td>int</td>
+                <td>Page number for pagination [> 0], Page size: 1000 records</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactSearch?customerID=12&repID=5&fromdate=2024-01-01&todate=2024-12-31&pagenumber=1" -Headers $headers</pre>
+
+            <strong>Bash:</strong>
+            <pre class="command">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactSearch?customerID=12&repID=5&fromdate=2024-01-01&todate=2024-12-31&pagenumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</pre>
+
+            <h3>Sample Response</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "CustomerID": 12,
+            "Customer": "Acme Corp",
+            "FirstName": "Robert",
+            "LastName": "Johnson",
+            "Address1": "789 Pine Street",
+            "Address2": "Suite 300",
+            "City": "New York",
+            "State": "NY",
+            "Zip": "10001",
+            "Country": "USA",
+            "Phone": "555-0126",
+            "Phone2": "555-0127",
+            "Email": "robert.j@acmecorp.com",
+            "URL": "www.acmecorp.com",
+            "DateAdded": "2023-06-15T10:30:00",
+            "Rep": "Sarah Wilson"
+        },
+        {
+            "CustomerID": 13,
+            "Customer": "Global Tech",
+            "FirstName": "Mary",
+            "LastName": "Brown",
+            "Address1": "321 Maple Drive",
+            "Address2": "",
+            "City": "San Francisco",
+            "State": "CA",
+            "Zip": "94105",
+            "Country": "USA",
+            "Phone": "555-0128",
+            "Phone2": "",
+            "Email": "mary.b@globaltech.com",
+            "URL": "www.globaltech.com",
+            "DateAdded": "2023-07-01T15:45:00",
+            "Rep": "Sarah Wilson"
+        }
+    ]
+}</pre>
+        </div>
+    </div>
+
+    <div class="endpoint">
+        <h2>Contacts Deleted Get</h2>
+        <p><strong>Endpoint:</strong> /api_ContactsDeletedGet</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Retrieves deleted contact information with filtering and pagination</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>customerID</td>
+                <td>varchar(10)</td>
+                <td>Filter by customer ID [-2 (All), > 0 (Specific customer)]</td>
+            </tr>
+            <tr>
+                <td>fromDate</td>
+                <td>varchar(50)</td>
+                <td>Start date for deletion period (YYYY-MM-DD)</td>
+            </tr>
+            <tr>
+                <td>toDate</td>
+                <td>varchar(50)</td>
+                <td>End date for deletion period (YYYY-MM-DD)</td>
+            </tr>
+            <tr>
+                <td>pageNumber</td>
+                <td>varchar(10)</td>
+                <td>Page number for pagination [> 0], Page size: 100 records</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactsDeletedGet?customerID=35&fromDate=2023-01-01&toDate=2023-12-31&pageNumber=1" -Headers $headers</pre>
+
+            <strong>Bash:</strong>
+            <pre class="command">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactsDeletedGet?customerID=35&fromDate=2023-01-01&toDate=2023-12-31&pageNumber=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</pre>
+
+            <h3>Sample Response</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "gsCustomersID": 35,
+            "Customer": "Tech Solutions Inc",
+            "Prefix": "Mr",
+            "FirstName": "David",
+            "LastName": "Anderson",
+            "Suffix": "",
+            "Title": "CTO",
+            "Address1": "567 Tech Parkway",
+            "Address2": "Floor 4",
+            "City": "Austin",
+            "State": "TX",
+            "Zip": "78701",
+            "Country": "USA",
+            "Email": "david.a@techsolutions.com",
+            "Phone": "555-0129",
+            "PhoneXtn": "123",
+            "Phone2": "555-0130",
+            "URL": "www.techsolutions.com",
+            "ContactType": "Primary",
+            "LastContract": "2023-05-15",
+            "LastContact": "2023-06-01",
+            "TwitterHandle": "@davidtech",
+            "FacebookID": "david.anderson",
+            "LinkedIn": "david-anderson-tech",
+            "DateAdded": "2022-01-10T08:30:00",
+            "ParentID": null,
+            "Rep": "Michael Adams"
+        }
+    ]
+}</pre>
+        </div>
+    </div>
+
+    <div class="endpoint">
+        <h2>Contact Priority Get</h2>
+        <p><strong>Endpoint:</strong> /api_ContactPriorityGet</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Retrieves contact priorities with optional filtering</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>PriorityID</td>
+                <td>varchar(10)</td>
+                <td>Filter by priority ID [NULL/Empty (All), > 0 (Specific priority)]</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactPriorityGet?PriorityID=4" -Headers $headers</pre>
+
+            <strong>Bash:</strong>
+            <pre class="command">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ContactPriorityGet?PriorityID=4" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</pre>
+
+            <h3>Sample Response</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "PriorityID": 4,
+            "Priority": "High"
+        }
+    ]
+}</pre>
+        </div>
+    </div>
+	    <div class="endpoint">
+        <h2>Products Get</h2>
+        <p><strong>Endpoint:</strong> /api_ProductsGet</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Retrieves product information with optional filtering for product type and active status</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Default</th>
+            </tr>
+            <tr>
+                <td>ProductTypeID</td>
+                <td>varchar(10)</td>
+                <td>Filter by product type [-2 (All), > 0 (Specific product type)]</td>
+                <td>-2</td>
+            </tr>
+            <tr>
+                <td>IsActive</td>
+                <td>varchar(10)</td>
+                <td>Filter by active status [-2 (All), 0 (Inactive), 1 (Active)]</td>
+                <td>-2</td>
+            </tr>
+        </table>
+
+        <h3>Response Status Codes</h3>
+        <table>
+            <tr>
+                <th>Status Code</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>200</td>
+                <td>Success - Data retrieved successfully</td>
+            </tr>
+            <tr>
+                <td>400</td>
+                <td>Bad Request - Invalid parameter format or value</td>
+            </tr>
+            <tr>
+                <td>404</td>
+                <td>Not Found - Product type not found</td>
+            </tr>
+            <tr>
+                <td>500</td>
+                <td>Server Error - Internal server error occurred</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell Example:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductsGet?ProductTypeID=&IsActive=1" -Headers $headers</pre>
+
+            <strong>Bash Example:</strong>
+            <pre class="command">curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductsGet?ProductTypeID=&IsActive=1" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"</pre>
+
+            <h3>Success Response Example</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "ProductID": 1,
+            "Product": "Digital Magazine Pro",
+            "SubProductType": "Digital",
+            "IssueSet": "Monthly"
+        },
+        {
+            "ProductID": 2,
+            "Product": "Print Quarterly",
+            "SubProductType": "Print",
+            "IssueSet": "Quarterly"
+        }
+    ]
+}</pre>
+
+            <h3>Error Response Example</h3>
+            <pre class="command">{
+    "StatusCode": 400,
+    "Message": "Invalid ProductTypeID parameter format",
+    "Data": null
+}</pre>
+        </div>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>All parameters are optional and have default values</li>
+            <li>Empty strings and NULL values are treated as default values</li>
+            <li>ProductTypeID must be either -2 (all) or a valid positive integer</li>
+            <li>IsActive must be one of: -2 (all), 0 (inactive), or 1 (active)</li>
+            <li>Results are returned in raw table format for API layer handling</li>
+        </ul>
+    </div>
+
+    
+    <div class="endpoint">
+        <h2>Product Types Get</h2>
+        <p><strong>Endpoint:</strong> /api_ProductTypesGet</p>
+        <p><strong>Method:</strong> GET</p>
+        <p><strong>Description:</strong> Retrieves enabled product type information with optional filtering by specific product type ID</p>
+        
+        <h3>Parameters</h3>
+        <table>
+            <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Default</th>
+            </tr>
+            <tr>
+                <td>ProductTypeID</td>
+                <td>varchar(10)</td>
+                <td>Filter by product type [-2 (All), > 0 (Specific product type)]</td>
+                <td>-2</td>
+            </tr>
+        </table>
+
+        <h3>Response Status Codes</h3>
+        <table>
+            <tr>
+                <th>Status Code</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>200</td>
+                <td>Success - Data retrieved successfully</td>
+            </tr>
+            <tr>
+                <td>400</td>
+                <td>Bad Request - Invalid parameter format</td>
+            </tr>
+            <tr>
+                <td>404</td>
+                <td>Not Found - Specified product type not found</td>
+            </tr>
+            <tr>
+                <td>500</td>
+                <td>Server Error - Internal server error occurred</td>
+            </tr>
+        </table>
+
+        <div class="curl">
+            <strong>PowerShell Example:</strong>
+            <pre class="command">$headers = @{
+    "X-DreamFactory-API-Key" = "apikeyvalue"
+}
+
+Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductTypesGet?ProductTypeID=" -Headers $headers
+</pre>
+            <strong>Bash Example:</strong>
+            <pre class="command">
+curl -X GET "https://api.mirabeltechnologies.com/api/v2/yourdatabasename/_proc/api_ProductTypesGet?ProductTypeID=-2" \
+    -H "X-DreamFactory-API-Key: apikeyvalue"
+</pre>
+
+            <h3>Success Response Example</h3>
+            <pre class="command">{
+    "StatusCode": 200,
+    "Message": "Success",
+    "Data": [
+        {
+            "ProductTypeID": 3,
+            "ProductType": "Digital"
+        },
+        {
+            "ProductTypeID": 1,
+            "ProductType": "Print"
+        }
+    ]
+}</pre>
+
+            <h3>Error Response Example</h3>
+            <pre class="command">{
+    "StatusCode": 400,
+    "Message": "Invalid ProductTypeID parameter format",
+    "Data": null
+}</pre>
+        </div>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>Only returns enabled product types (where isenabled = 1)</li>
+            <li>The ProductTypeID parameter is optional and defaults to -2 (all enabled types)</li>
+            <li>Empty strings and NULL values are treated as the default value (-2)</li>
+            <li>ProductTypeID must be either -2 (all) or a valid positive integer</li>
+            <li>Results are returned in raw table format for API layer handling</li>
+            <li>The endpoint will return a 404 error if a specific ProductTypeID is requested but not found</li>
+        </ul>
+    </div>
+</body>
+</html>

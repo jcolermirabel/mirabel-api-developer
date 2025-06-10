@@ -1,0 +1,237 @@
+import { useState, useEffect } from 'react';
+import { Grid, Paper, Box, Typography, Button } from '@mui/material';
+import MetricCard from './MetricCard';
+import ActivityChart from './ActivityChart';
+import { getDashboardMetrics } from '../../services/dashboardService';
+import LoadingSpinner from '../common/LoadingSpinner';
+import { useAuth } from '../../context/AuthContext';
+
+const Dashboard = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.isAdmin || user?.userType === 'admin';
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Used to force refresh
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const data = await getDashboardMetrics();
+        console.log("Dashboard received metrics:", data);
+        
+        if (data.activityData && data.activityData.length > 0) {
+          // Log detailed information about the data structure
+          console.log("Activity data structure:");
+          console.table(data.activityData);
+          
+          // Calculate totals to verify data exists
+          const totalRecords = data.activityData.reduce((sum, day) => sum + (day.totalRecords || 0), 0);
+          const totalDataSize = data.activityData.reduce((sum, day) => sum + (day.totalDataSize || 0), 0);
+          
+          console.log(`Total Records across all days: ${totalRecords}`);
+          console.log(`Total Data Size across all days: ${totalDataSize}`);
+        } else {
+          console.warn("No activity data received or empty array");
+        }
+        
+        setMetrics(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard metrics:', error);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, [refreshKey]);
+
+  const handleRefresh = () => {
+    console.log("Refreshing dashboard data...");
+    setMetrics(null); // Clear existing data first
+    setLoading(true);
+    setRefreshKey(prev => prev + 1); // Triggers the useEffect to reload data
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography color="error">{error}</Typography>
+        <Button variant="contained" sx={{ mt: 2 }} onClick={handleRefresh}>
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  // Check if we have all the required data
+  if (!metrics || !metrics.activityData) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography>No dashboard data available</Typography>
+        <Button variant="contained" sx={{ mt: 2 }} onClick={handleRefresh}>
+          Refresh
+        </Button>
+      </Box>
+    );
+  }
+
+  // Render different dashboard based on user role
+  if (isAdmin) {
+    // Admin Dashboard
+    return (
+      <Box sx={{ p: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4">Admin Dashboard</Typography>
+          <Button variant="outlined" onClick={handleRefresh}>
+            Refresh Data
+          </Button>
+        </Box>
+        
+        <Grid container spacing={3}>
+          {/* Metric Cards */}
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Services"
+              value={metrics?.services || 0}
+              icon="services"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Applications"
+              value={metrics?.applications || 0}
+              icon="apps"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="Roles"
+              value={metrics?.roles || 0}
+              icon="roles"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <MetricCard
+              title="API Calls Today"
+              value={metrics?.apiCalls || metrics?.activityData?.find(day => {
+                const today = new Date().toISOString().split('T')[0];
+                const dayDate = day.date || day.day || '';
+                return dayDate.includes(today);
+              })?.calls || 0}
+              icon="api"
+            />
+          </Grid>
+
+          {/* Activity Charts - Full width and stacked vertically */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <ActivityChart 
+                data={metrics.activityData} 
+                dataKey="calls"
+                title="API Calls Per Day"
+              />
+            </Paper>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <ActivityChart 
+                data={metrics.activityData} 
+                dataKey="totalRecords"
+                title="Total Records Per Day"
+              />
+            </Paper>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2 }}>
+              <ActivityChart 
+                data={metrics.activityData} 
+                dataKey="totalDataSize"
+                title="Total Data Size Per Day"
+              />
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  } else {
+    // Non-Admin User Dashboard
+    return (
+      <Box sx={{ p: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h4">My Dashboard</Typography>
+          <Button variant="outlined" onClick={handleRefresh}>
+            Refresh Data
+          </Button>
+        </Box>
+        
+        <Grid container spacing={3}>
+          {/* Only show API Calls Today for non-admin users */}
+          <Grid item xs={12} sm={6} md={6}>
+            <MetricCard
+              title="API Calls Today"
+              value={metrics?.apiCalls || metrics?.activityData?.find(day => {
+                const today = new Date().toISOString().split('T')[0];
+                const dayDate = day.date || day.day || '';
+                return dayDate.includes(today);
+              })?.calls || 0}
+              icon="api"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={6}>
+            <MetricCard
+              title="Selected Database"
+              value={(() => {
+                // Use the same logic as getUserDatabaseName in dashboardService.js
+                const selectedDatabase = localStorage.getItem('selectedDatabase');
+                if (selectedDatabase) return selectedDatabase;
+                
+                try {
+                  const userStr = localStorage.getItem('user');
+                  if (!userStr) return "None";
+                  
+                  const userData = JSON.parse(userStr);
+                  
+                  // First try mirabelConnect.databaseName
+                  if (userData.user?.mirabelConnect?.databaseName) {
+                    return userData.user.mirabelConnect.databaseName;
+                  }
+                  
+                  // Then try first accessible database
+                  if (userData.user?.mirabelConnect?.accessibleDatabases?.length === 1) {
+                    return userData.user.mirabelConnect.accessibleDatabases[0].databaseName;
+                  }
+                  
+                  // Last resort, try legacy DatabaseName
+                  return userData.user?.DatabaseName || "None";
+                } catch (error) {
+                  console.error('Error getting database name for display:', error);
+                  return "None";
+                }
+              })()}
+              icon="database"
+            />
+          </Grid>
+
+          {/* Only show API Calls chart for non-admin users */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2, mb: 3 }}>
+              <ActivityChart 
+                data={metrics.activityData} 
+                dataKey="calls"
+                title="My API Calls Per Day"
+              />
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
+};
+
+export default Dashboard; 

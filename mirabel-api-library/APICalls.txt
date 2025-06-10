@@ -1,0 +1,44 @@
+
+--api_ContactPriorityGet
+
+$headers = @{
+    "X-DreamFactory-API-Key" = "b21e2ddde1a82217985ed7e04fb80c16987ca96848f9c3ac38ca0661dc291a81"
+}
+
+$response = Invoke-RestMethod -Method GET -Uri "https://api.mirabeltechnologies.com/api/v2/salesdemo_new/_proc/api_ContactPriorityGet?PriorityID=" -Headers $headers
+$response | ConvertTo-Json
+
+
+$headers = @{
+    "x-mirabel-api-key" = "bcb7d03ac2556613034ef4460d9059987ed2b548055eb543111d72d8ef0c91c2"
+}
+
+$response = Invoke-RestMethod -Method GET -Uri "https://staging-api.magazinemanager.biz/api/v2/salesdemo_staging/_proc/api_ContactPriorityGet?PriorityID=" -Headers $headers
+$response | ConvertTo-Json -Depth 100
+
+
+$headers = @{
+    "x-mirabel-api-key" = "8c39909715728c07e27ecdeb98094b6665e11bd7f4e64325ac3996956e1f2ee9"
+}
+
+$response = Invoke-RestMethod -Method POST -Uri "https://mirabelconnect.mirabeltechnologies.com/api/v2/icoler/_proc/mc_ContactPriorityCreate?PriorityName=PIF" -Headers $headers
+$response | ConvertTo-Json -Depth 100
+
+
+--post:
+
+$headers = @{
+    "x-mirabel-api-key" = "8c39909715728c07e27ecdeb98094b6665e11bd7f4e64325ac3996956e1f2ee9"
+    "Content-Type"      = "application/json" # Tell the server we're sending JSON
+}
+
+$body = @{
+    "PriorityName" = "PIF" # Parameter to be sent in the body
+} | ConvertTo-Json # Convert the PowerShell hashtable to a JSON string
+
+$uri = "https://mirabelconnect.mirabeltechnologies.com/api/v2/icoler/_proc/mc_ContactPriorityCreate" # URI without query parameters
+
+$response = Invoke-RestMethod -Method POST -Uri $uri -Headers $headers -Body $body
+$response | ConvertTo-Json -Depth 100
+
+Write-Host "Response: $($response | ConvertTo-Json -Depth 100)"

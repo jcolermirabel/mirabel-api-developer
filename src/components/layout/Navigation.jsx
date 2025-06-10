@@ -28,6 +28,7 @@ import {
   Description as DocsIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
+  Cable as ConnectionIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -51,6 +52,12 @@ const Navigation = () => {
       icon: <DashboardIcon />,
       path: '/dashboard',
       permission: 'canViewDashboard'
+    },
+    {
+      text: 'Connections',
+      icon: <ConnectionIcon />,
+      path: '/connections',
+      permission: 'canManageServices'
     },
     {
       text: 'Services',
@@ -80,8 +87,7 @@ const Navigation = () => {
       text: 'API Documentation',
       icon: <DocsIcon />,
       path: '/documentation',
-      permission: 'canViewDocs',
-      hidden: true 
+      permission: 'canViewDocs'
     },
     {
       text: 'API Usage Report',

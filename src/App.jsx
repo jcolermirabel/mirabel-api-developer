@@ -16,6 +16,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import UserSettings from './components/settings/UserSettings';
 import AdminSettings from './components/settings/AdminSettings';
+import ConnectionList from './components/connections/ConnectionList';
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -62,6 +63,7 @@ function App() {
           />
           
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/connections" element={<ProtectedRoute><ConnectionList /></ProtectedRoute>} />
           <Route path="/services" element={<ProtectedRoute><ServiceList /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RoleList /></ProtectedRoute>} />

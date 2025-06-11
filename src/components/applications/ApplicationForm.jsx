@@ -19,6 +19,7 @@ const ApplicationForm = ({ application, onSubmitted, onCancel }) => {
   const [formData, setFormData] = useState({
     name: application?.name || '',
     description: application?.description || '',
+    apiKey: application?.apiKey || '',
     defaultRole: application?.defaultRole?._id || '',
     isActive: application?.isActive ?? true
   });
@@ -95,6 +96,16 @@ const ApplicationForm = ({ application, onSubmitted, onCancel }) => {
           rows={3}
           value={formData.description}
           onChange={handleChange}
+        />
+
+        <TextField
+          margin="dense"
+          label="API Key"
+          name="apiKey"
+          fullWidth
+          value={formData.apiKey}
+          onChange={handleChange}
+          helperText="Leave blank to generate a new key."
         />
 
         <TextField

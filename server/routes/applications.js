@@ -19,9 +19,12 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { name, description, defaultRole, isActive } = req.body;
-    
-    // Generate API key
-    const apiKey = crypto.randomBytes(32).toString('hex');
+    let { apiKey } = req.body;
+
+    // Generate API key if not provided
+    if (!apiKey) {
+      apiKey = crypto.randomBytes(32).toString('hex');
+    }
 
     const application = new Application({
       name,
@@ -47,11 +50,11 @@ router.post('/', async (req, res) => {
 // Update application
 router.put('/:id', async (req, res) => {
   try {
-    const { name, description, defaultRole, isActive } = req.body;
+    const { name, description, defaultRole, isActive, apiKey } = req.body;
     
     const application = await Application.findByIdAndUpdate(
       req.params.id,
-      { name, description, defaultRole, isActive },
+      { name, description, defaultRole, isActive, apiKey },
       { new: true }
     )
     .populate('defaultRole', 'name')

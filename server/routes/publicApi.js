@@ -5,17 +5,26 @@ const Service = require('../models/Service');
 const Connection = require('../models/Connection');
 const ApiUsage = require('../models/ApiUsage');
 const { decryptDatabasePassword } = require('../utils/encryption');
-const { consolidatedApiKeyMiddleware } = require('../middleware/consolidatedAuthMiddleware');
+const { simpleApiKeyMiddleware } = require('../middleware/simpleApiKeyMiddleware');
 
-// Public API endpoint handler for stored procedures
-router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, async (req, res) => {
+// Public API endpoint handler for stored procedures (GET and POST)
+router.get('/:serviceName/_proc/:procedureName', simpleApiKeyMiddleware, async (req, res) => {
+  await handleProcedureRequest(req, res);
+});
+
+router.post('/:serviceName/_proc/:procedureName', simpleApiKeyMiddleware, async (req, res) => {
+  await handleProcedureRequest(req, res);
+});
+
+async function handleProcedureRequest(req, res) {
   let pool;
   try {
     console.log('Public API - Request received:', {
       params: req.params,
       query: req.query,
+      body: req.body,
       headers: {
-        'x-mirabel-api-key': req.headers['x-mirabel-api-key'] ? 'present' : 'missing',
+        'x-mirabel-developer-key': req.headers['x-mirabel-developer-key'] ? 'present' : 'missing',
         'accept': req.headers['accept']
       }
     });
@@ -94,9 +103,12 @@ router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, a
     // Connect to database
     pool = await sql.connect(config);
 
+    // Handle parameters from both query string (GET) and request body (POST)
+    const parameters = { ...req.query, ...req.body };
+
     // Handle query parameters
     const request = pool.request();
-    Object.entries(req.query).forEach(([key, value]) => {
+    Object.entries(parameters).forEach(([key, value]) => {
       request.input(key, value);
     });
 
@@ -116,13 +128,11 @@ router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, a
       return processedRecord;
     });
 
-    // Log API usage
+    // Log API usage (simplified for endpoint-based API keys)
     const apiUsage = new ApiUsage({
       service: service._id,
       endpoint: req.originalUrl,
       component: req.params.procedureName,
-      role: req.application.defaultRole._id,
-      application: req.application._id,
       timestamp: new Date(),
       method: req.method,
       statusCode: 200
@@ -132,21 +142,17 @@ router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, a
     console.log('API Usage logged:', {
       service: service.name,
       endpoint: req.params.procedureName,
-      application: req.application.name,
-      role: req.application.defaultRole.name,
       method: req.method
     });
 
     res.json(cleanResults);
   } catch (error) {
     // Log failed API calls too
-    if (req.service && req.application) {
+    if (req.service) {
       const apiUsage = new ApiUsage({
         service: req.service._id,
         endpoint: req.originalUrl,
         component: req.params.procedureName,
-        role: req.application.defaultRole._id,
-        application: req.application._id,
         timestamp: new Date(),
         method: req.method,
         statusCode: 500
@@ -168,6 +174,6 @@ router.get('/:serviceName/_proc/:procedureName', consolidatedApiKeyMiddleware, a
       }
     }
   }
-});
+}
 
 module.exports = router; 

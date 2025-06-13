@@ -7,10 +7,10 @@ const { encryptDatabasePassword, decryptDatabasePassword } = require('../utils/e
 const { logger } = require('../utils/logger');
 const { authMiddleware } = require('../middleware/auth');
 
-router.use(authMiddleware);
+// router.use(authMiddleware); // This was causing all connection routes to fail authentication silently.
 
 // GET all connections
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const connections = await Connection.find();
     res.json(connections);
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET connection by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const connection = await Connection.findById(req.params.id);
     if (!connection) {
@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET databases for a connection
-router.get('/:id/databases', async (req, res) => {
+router.get('/:id/databases', authMiddleware, async (req, res) => {
   let pool;
   try {
     const connection = await Connection.findById(req.params.id).select('+password');
@@ -76,7 +76,7 @@ router.get('/:id/databases', async (req, res) => {
 });
 
 // POST create new connection
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     console.log('Connection creation request received:', {
       name: req.body.name,
@@ -111,7 +111,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update connection
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const connection = await Connection.findById(req.params.id);
     if (!connection) {
@@ -148,7 +148,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE connection
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     // Check if any services depend on this connection
     const dependentServices = await Service.find({ connectionId: req.params.id });
@@ -174,7 +174,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST test connection
-router.post('/:id/test', async (req, res) => {
+router.post('/:id/test', authMiddleware, async (req, res) => {
   try {
     const connection = await Connection.findById(req.params.id);
     if (!connection) {
@@ -190,7 +190,7 @@ router.post('/:id/test', async (req, res) => {
 });
 
 // POST test connection (without saving)
-router.post('/test', async (req, res) => {
+router.post('/test', authMiddleware, async (req, res) => {
   try {
     const tempConnection = new Connection(req.body);
     const result = await tempConnection.testConnection();

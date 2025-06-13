@@ -23,12 +23,11 @@ import {
   LightMode,
   Dashboard as DashboardIcon,
   ChevronLeft as ChevronLeftIcon,
-  Apps as AppsIcon,
-  Security as SecurityIcon,
   Description as DocsIcon,
   Assessment as ReportIcon,
   Settings as SettingsIcon,
   Cable as ConnectionIcon,
+  VpnKey as ApiKeyIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -60,22 +59,16 @@ const Navigation = () => {
       permission: 'canManageServices'
     },
     {
-      text: 'Services',
+      text: 'Endpoints',
       icon: <Storage />,
-      path: '/services',
-      permission: 'canManageServices'
+      path: '/endpoints',
+      permission: 'canManageEndpoints'
     },
     {
-      text: 'Roles',
-      icon: <SecurityIcon />,
-      path: '/roles',
-      permission: 'canManageRoles'
-    },
-    {
-      text: 'Applications',
-      icon: <AppsIcon />,
-      path: '/applications',
-      permission: 'canManageApplications'
+      text: 'API Keys',
+      icon: <ApiKeyIcon />,
+      path: '/api-keys',
+      permission: 'canManageApiKeys'
     },
     {
       text: 'Users',

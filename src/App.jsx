@@ -1,15 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import CreateRole from './components/roles/CreateRole';
-import RoleEdit from './components/roles/RoleEdit';
-import RoleList from './components/roles/RoleList';
 import Login from './components/auth/Login';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/dashboard/Dashboard';
-import ServiceList from './components/services/ServiceList';
+import EndpointList from './components/endpoints/EndpointList';
+import NewEndpoint from './components/endpoints/NewEndpoint';
 import UserList from './components/users/UserList';
 import { SelectionProvider } from './context/SelectionContext';
-import ApplicationList from './components/applications/ApplicationList';
 import ApiDocViewer from './components/documentation/ApiDocViewer';
 import ApiUsageReport from './components/reports/ApiUsageReport';
 import { LocalizationProvider } from '@mui/x-date-pickers';
@@ -18,6 +15,7 @@ import UserSettings from './components/settings/UserSettings';
 import AdminSettings from './components/settings/AdminSettings';
 import ConnectionList from './components/connections/ConnectionList';
 import { NotificationProvider } from './context/NotificationContext';
+import ApiKeyManager from './components/api-keys/ApiKeyManager';
 
 const ProtectedLayout = ({ children }) => {
   return (
@@ -66,12 +64,10 @@ function App() {
             
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/connections" element={<ProtectedRoute><ConnectionList /></ProtectedRoute>} />
-            <Route path="/services" element={<ProtectedRoute><ServiceList /></ProtectedRoute>} />
+            <Route path="/endpoints" element={<ProtectedRoute><EndpointList /></ProtectedRoute>} />
+            <Route path="/endpoints/new" element={<ProtectedRoute><NewEndpoint /></ProtectedRoute>} />
+            <Route path="/api-keys" element={<ProtectedRoute><ApiKeyManager /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
-            <Route path="/roles" element={<ProtectedRoute><RoleList /></ProtectedRoute>} />
-            <Route path="/roles/create" element={<ProtectedRoute><CreateRole mode="create" /></ProtectedRoute>} />
-            <Route path="/roles/edit/:id" element={<ProtectedRoute><RoleEdit /></ProtectedRoute>} />
-            <Route path="/applications" element={<ProtectedRoute><ApplicationList /></ProtectedRoute>} />
             <Route path="/documentation" element={<ProtectedRoute><ApiDocViewer /></ProtectedRoute>} />
             <Route path="/reports/api-usage" element={<ProtectedRoute><ApiUsageReport /></ProtectedRoute>} />
             <Route path="/user-settings" element={

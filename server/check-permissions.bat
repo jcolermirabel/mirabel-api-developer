@@ -1,0 +1,3 @@
+@echo off
+node scripts\checkApiKeyPermissions.js 25477a607db9570769848c69dc7c63fec894a22ed2b327e95471f7c58060a249 salesdemo_new api_ChargeBriteUserLookupPaywall
+pause 

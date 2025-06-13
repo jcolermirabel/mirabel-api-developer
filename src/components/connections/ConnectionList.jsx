@@ -9,16 +9,26 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  PlayArrow as TestIcon
+  PlayArrow as TestIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { getConnections, createConnection, updateConnection, deleteConnection, testConnection, testConnectionDetails } from '../../services/connectionService';
+import { 
+  getConnections, 
+  createConnection, 
+  updateConnection, 
+  deleteConnection, 
+  testConnection, 
+  testConnectionDetails,
+  refreshDatabaseRegistry
+} from '../../services/connectionService';
 import ConnectionForm from './ConnectionForm';
 import { useNotification } from '../../context/NotificationContext';
 
@@ -28,6 +38,7 @@ const ConnectionList = () => {
   const [error, setError] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
+  const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
   const { showNotification } = useNotification();
 
   const fetchConnections = async () => {
@@ -126,6 +137,19 @@ const ConnectionList = () => {
     }
   };
 
+  const handleRefreshRegistry = async () => {
+    setIsRefreshingRegistry(true);
+    try {
+      const result = await refreshDatabaseRegistry();
+      showNotification(result.message || 'Database registry refreshed successfully!', 'success');
+    } catch (err) {
+      showNotification(err.message || 'Failed to refresh database registry.', 'error');
+      console.error(err);
+    } finally {
+      setIsRefreshingRegistry(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <Alert severity="error">{error}</Alert>;
 
@@ -144,13 +168,23 @@ const ConnectionList = () => {
         mb: 2
       }}>
         <Typography variant="h4">Database Connections</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddConnection}
-        >
-          Add Connection
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={isRefreshingRegistry ? <CircularProgress size={20} /> : <RefreshIcon />}
+            onClick={handleRefreshRegistry}
+            disabled={isRefreshingRegistry}
+          >
+            Refresh Registry
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddConnection}
+          >
+            Add Connection
+          </Button>
+        </Box>
       </Box>
 
       <ConnectionForm

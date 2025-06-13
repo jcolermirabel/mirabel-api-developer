@@ -8,10 +8,10 @@ export const PermissionProvider = ({ children }) => {
   const [permissions, setPermissions] = useState({
     canViewDashboard: true,
     canManageServices: true,
+    canManageEndpoints: true,
+    canManageApiKeys: true,
     canManageUsers: true,
-    canManageRoles: true,
-    canViewDocs: true,
-    canManageApplications: true
+    canViewDocs: true
   });
 
   useEffect(() => {
@@ -34,10 +34,10 @@ export const usePermissions = () => {
     return {
       canViewDashboard: true,
       canManageServices: true,
+      canManageEndpoints: true,
+      canManageApiKeys: true,
       canManageUsers: true,
-      canManageRoles: true,
-      canViewDocs: true,
-      canManageApplications: true
+      canViewDocs: true
     };
   }
   return context;

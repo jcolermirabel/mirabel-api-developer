@@ -41,10 +41,10 @@
     "tedious": "^11.0.8"
   },
   "scripts": {
-    "start": "react-app-rewired start",
-    "start:frontend": "react-app-rewired start",
+    "start": "react-app-rewired --openssl-legacy-provider start",
+    "start:frontend": "react-app-rewired --openssl-legacy-provider start",
     "start:backend": "cd server && npm run dev",
-    "build": "react-app-rewired build",
+    "build": "react-app-rewired --openssl-legacy-provider build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
     "test:apps": "node tests/applicationTest.js",
@@ -76,6 +76,9 @@
   "devDependencies": {
     "axios": "^1.7.8",
     "concurrently": "^8.0.1",
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "mongoose": "^8.4.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5"
   }
 }

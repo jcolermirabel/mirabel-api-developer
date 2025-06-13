@@ -69,4 +69,14 @@ export const testConnectionDetails = async (connectionData) => {
     const errorMessage = error.response?.data?.error || 'Connection test failed';
     throw new Error(errorMessage);
   }
+};
+
+export const refreshDatabaseRegistry = async () => {
+  try {
+    const response = await api.post('/api/connections/refresh-registry');
+    return response.data;
+  } catch (error) {
+    console.error('Error refreshing database registry:', error);
+    throw error.response?.data?.message || 'Error refreshing database registry';
+  }
 }; 

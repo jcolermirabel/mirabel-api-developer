@@ -12,6 +12,12 @@ const applicationSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  apiKeyIdentifier: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
   defaultRole: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Role',

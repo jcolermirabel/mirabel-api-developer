@@ -27,7 +27,8 @@ import {
   deleteConnection, 
   testConnection, 
   testConnectionDetails,
-  refreshDatabaseRegistry
+  refreshDatabaseRegistry,
+  refreshConnectionDatabases,
 } from '../../services/connectionService';
 import ConnectionForm from './ConnectionForm';
 import { useNotification } from '../../context/NotificationContext';
@@ -39,6 +40,7 @@ const ConnectionList = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [isRefreshingRegistry, setIsRefreshingRegistry] = useState(false);
+  const [refreshingId, setRefreshingId] = useState(null);
   const { showNotification } = useNotification();
 
   const fetchConnections = async () => {
@@ -150,6 +152,20 @@ const ConnectionList = () => {
     }
   };
 
+  const handleRefreshConnection = async (connectionId) => {
+    setRefreshingId(connectionId);
+    try {
+      const updatedConnection = await refreshConnectionDatabases(connectionId);
+      setConnections(connections.map(c => c._id === connectionId ? updatedConnection : c));
+      showNotification(`Refreshed databases for ${updatedConnection.name}`, 'success');
+    } catch (err) {
+      showNotification(err.message || 'Failed to refresh databases.', 'error');
+      console.error(err);
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <Alert severity="error">{error}</Alert>;
 
@@ -217,7 +233,7 @@ const ConnectionList = () => {
                 <TableCell sx={{ backgroundColor: '#1e2a3b', color: 'white', borderBottom: 'none' }}>
                   Status
                 </TableCell>
-                <TableCell sx={{ backgroundColor: '#1e2a3b', color: 'white', borderBottom: 'none', width: '150px' }}>
+                <TableCell sx={{ backgroundColor: '#1e2a3b', color: 'white', borderBottom: 'none', width: '200px' }}>
                   Actions
                 </TableCell>
               </TableRow>
@@ -237,6 +253,13 @@ const ConnectionList = () => {
                   <TableCell>{connection.status || 'N/A'}</TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => handleRefreshConnection(connection._id)}
+                        disabled={refreshingId === connection._id}
+                      >
+                        {refreshingId === connection._id ? <CircularProgress size={20} /> : <RefreshIcon />}
+                      </IconButton>
                       <IconButton size="small" onClick={() => handleTestConnection(connection._id)}>
                         <TestIcon />
                       </IconButton>

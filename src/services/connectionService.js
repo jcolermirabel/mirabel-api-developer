@@ -79,4 +79,14 @@ export const refreshDatabaseRegistry = async () => {
     console.error('Error refreshing database registry:', error);
     throw error.response?.data?.message || 'Error refreshing database registry';
   }
+};
+
+export const refreshConnectionDatabases = async (id) => {
+  try {
+    const response = await api.post(`/api/connections/${id}/refresh`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error refreshing databases for connection ${id}:`, error);
+    throw error.response?.data?.message || `Error refreshing databases for connection ${id}`;
+  }
 }; 

@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const apiUsageSchema = new mongoose.Schema({
-  service: {
+  connectionId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Service',
+    ref: 'Connection',
     required: true
   },
   endpoint: {
@@ -38,7 +38,7 @@ const apiUsageSchema = new mongoose.Schema({
   }
 });
 
-apiUsageSchema.index({ service: 1, timestamp: 1 });
+apiUsageSchema.index({ connectionId: 1, timestamp: 1 });
 apiUsageSchema.index({ role: 1, timestamp: 1 });
 apiUsageSchema.index({ application: 1, timestamp: 1 });
 apiUsageSchema.index({ component: 1 });

@@ -97,6 +97,15 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
+    // Fetch databases
+    const dbResult = await connection.fetchDatabases();
+    if (dbResult.success) {
+      connection.databases = dbResult.databases;
+    } else {
+      // Log the error but don't fail the whole connection creation
+      logger.warn(`Could not fetch databases for ${connection.name} during creation: ${dbResult.error}`);
+    }
+
     // Save connection (password will be encrypted by pre-save middleware)
     connection.createdBy = req.user.userId;
     const savedConnection = await connection.save();
@@ -198,6 +207,32 @@ router.post('/test', authMiddleware, async (req, res) => {
   } catch (error) {
     logger.error('Test connection error:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST refresh database list for a connection
+router.post('/:id/refresh', authMiddleware, async (req, res) => {
+  try {
+    const connection = await Connection.findById(req.params.id);
+    if (!connection) {
+      return res.status(404).json({ message: 'Connection not found' });
+    }
+
+    const dbResult = await connection.fetchDatabases();
+    if (!dbResult.success) {
+      return res.status(500).json({ 
+        message: 'Failed to fetch databases', 
+        error: dbResult.error 
+      });
+    }
+
+    connection.databases = dbResult.databases;
+    const updatedConnection = await connection.save();
+
+    res.json(updatedConnection);
+  } catch (error) {
+    logger.error(`Error refreshing databases for connection ${req.params.id}:`, error);
+    res.status(500).json({ message: 'Failed to refresh databases', error: error.message });
   }
 });
 

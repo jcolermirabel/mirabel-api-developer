@@ -13,11 +13,13 @@ const { logger } = require('./middleware/logger');
 const { consolidatedApiKeyMiddleware } = require('./middleware/consolidatedAuthMiddleware');
 
 // Debug environment variables
-console.log('Environment:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
-  MONGODB_URI: process.env.MONGODB_URI
-});
+if (process.env.NODE_ENV !== 'production') {
+  console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    MONGODB_URI: process.env.MONGODB_URI
+  });
+}
 
 // Trust proxy configuration - MUST be first, before any middleware
 app.enable('trust proxy');
@@ -30,32 +32,36 @@ const cookieParser = require('cookie-parser');
 const persistentAuth = require('./middleware/persistentAuth');
 
 // Add request logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  console.log('Headers:', JSON.stringify(req.headers));
-  next();
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    console.log('Headers:', JSON.stringify(req.headers));
+    next();
+  });
+}
 
 // Security middleware
 app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: ['https://mirabelconnect.mirabeltechnologies.com', 'http://mirabelconnect.mirabeltechnologies.com', 'http://localhost:3000'],
+  origin: ['https://mirabelconnect.mirabeltechnologies.com', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 // Add response logging middleware
-app.use((req, res, next) => {
-  const originalSend = res.send;
-  res.send = function(body) {
-    console.log(`[${new Date().toISOString()}] Response status: ${res.statusCode}`);
-    return originalSend.call(this, body);
-  };
-  next();
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    const originalSend = res.send;
+    res.send = function(body) {
+      console.log(`[${new Date().toISOString()}] Response status: ${res.statusCode}`);
+      return originalSend.call(this, body);
+    };
+    next();
+  });
+}
 
 app.use(express.json());
 app.use(cookieParser());

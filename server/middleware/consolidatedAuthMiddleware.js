@@ -2,6 +2,7 @@ const Application = require('../models/Application');
 const Service = require('../models/Service');
 const mongoose = require('mongoose');
 const { logger } = require('./logger');
+const bcrypt = require('bcryptjs');
 
 class AuthenticationError extends Error {
   constructor(message, statusCode, details = {}) {
@@ -23,11 +24,17 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
       throw new AuthenticationError('API key required', 401);
     }
 
-    // 2. Find and validate application
-    const application = await Application.findOne({ apiKey })
+    // 2. Find application by API key's unique identifier part
+    const keyParts = apiKey.split('.');
+    if (keyParts.length !== 2) {
+      throw new AuthenticationError('Invalid API key format', 401);
+    }
+    const keyIdentifier = keyParts[0];
+
+    const application = await Application.findOne({ apiKeyIdentifier: keyIdentifier })
       .populate({
         path: 'defaultRole',
-        populate: { 
+        populate: {
           path: 'permissions'
         }
       })
@@ -37,11 +44,17 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
       throw new AuthenticationError('Invalid or inactive API key', 401);
     }
 
+    // 3. Securely compare the full API key
+    const isValid = await bcrypt.compare(apiKey, application.apiKey);
+    if (!isValid) {
+      throw new AuthenticationError('Invalid or inactive API key', 401);
+    }
+
     if (!application.defaultRole || !application.defaultRole.isActive) {
       throw new AuthenticationError('No active role associated with this application', 403);
     }
 
-    // 3. Parse URL for service and procedure
+    // 4. Parse URL for service and procedure
     const serviceName = req.params.serviceName;
     const procedureName = req.params.procedureName;
 
@@ -51,7 +64,7 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
       });
     }
 
-    // 4. Find and validate service
+    // 5. Find and validate service
     const service = await Service.findOne({ 
       name: serviceName,
       isActive: true 
@@ -63,7 +76,7 @@ const consolidatedApiKeyMiddleware = async (req, res, next) => {
       });
     }
 
-    // 5. Validate procedure permission
+    // 6. Validate procedure permission
     // Check if the role has permission for this procedure and service
     const hasPermission = application.defaultRole.permissions.some(perm => 
       perm.serviceId.toString() === service._id.toString() && // Match service

@@ -29,7 +29,7 @@ const generateTokens = (payload) => {
     { 
       expiresIn: '4h', // Longer-lived access token for better UX
       jwtid: accessTokenId,
-      issuer: 'mirabel-api',
+      issuer: process.env.JWT_ISSUER || 'mirabel-api-developer',
       audience: 'mirabel-client'
     }
   );
@@ -40,7 +40,7 @@ const generateTokens = (payload) => {
     { 
       expiresIn: '7d', // Longer-lived refresh token
       jwtid: refreshTokenId,
-      issuer: 'mirabel-api',
+      issuer: process.env.JWT_ISSUER || 'mirabel-api-developer',
       audience: 'mirabel-client'
     }
   );
@@ -68,7 +68,7 @@ const validateToken = async (token) => {
     }
     
     // Validate issuer and audience for enhanced security
-    if (decoded.iss !== 'mirabel-api' || decoded.aud !== 'mirabel-client') {
+    if (decoded.iss !== (process.env.JWT_ISSUER || 'mirabel-api-developer') || decoded.aud !== 'mirabel-client') {
       throw new Error('Invalid token issuer or audience');
     }
     

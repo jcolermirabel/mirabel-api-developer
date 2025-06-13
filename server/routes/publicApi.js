@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const sql = require('mssql');
-const Service = require('../models/Service');
 const Connection = require('../models/Connection');
 const ApiUsage = require('../models/ApiUsage');
 const { decryptDatabasePassword } = require('../utils/encryption');
@@ -19,70 +18,37 @@ router.post('/:serviceName/_proc/:procedureName', simpleApiKeyMiddleware, async 
 async function handleProcedureRequest(req, res) {
   let pool;
   try {
-    console.log('Public API - Request received:', {
-      params: req.params,
-      query: req.query,
-      body: req.body,
-      headers: {
-        'x-mirabel-developer-key': req.headers['x-mirabel-developer-key'] ? 'present' : 'missing',
-        'accept': req.headers['accept']
-      }
-    });
+    const databaseName = req.params.serviceName;
+    const procedureName = req.params.procedureName;
 
-    console.log('Public API - Looking for service:', {
-      serviceName: req.params.serviceName,
-      procedureName: req.params.procedureName
-    });
-
-    // Find service by case-insensitive name
-    const service = await Service.findOne({ 
-      name: { $regex: new RegExp(`^${req.params.serviceName}$`, 'i') },
+    // Find a connection that is authorized for the requested database
+    const connection = await Connection.findOne({
+      databases: databaseName,
       isActive: true
-    });
+    }).select('+password');
 
-    if (!service) {
-      return res.status(404).json({ message: 'Service not found or inactive' });
+    if (!connection) {
+      return res.status(404).json({ 
+        message: `Configuration error: No active connection found for database '${databaseName}'.` 
+      });
     }
 
-    let connectionDetails = {};
+    req.connection = connection; // Attach connection to request for logging purposes
 
-    if (service.connectionId) {
-      const connection = await Connection.findById(service.connectionId).select('+password');
-      if (!connection) {
-        throw new Error('The underlying connection for this service could not be found.');
-      }
-      connectionDetails = {
-        host: connection.host,
-        port: connection.port,
-        username: connection.username,
-        password: connection.password,
-      };
-    } else {
-      // Fallback for older services without a dedicated connection object
-      connectionDetails = {
-        host: service.host,
-        port: service.port,
-        username: service.username,
-        password: service.password,
-      };
-    }
-
-    if (!connectionDetails.password) {
-      throw new Error('Could not determine credentials for service.');
-    }
-
-    console.log('Public API - Service found:', {
-      id: service._id,
-      name: service.name,
-      endpoint: req.params.procedureName
+    console.log('Public API - Request received for:', {
+      connection: connection.name,
+      database: databaseName,
+      procedure: procedureName,
+      params: req.query,
+      body: req.body
     });
 
     const config = {
-      user: connectionDetails.username,
-      password: decryptDatabasePassword(connectionDetails.password),
-      server: connectionDetails.host,
-      port: parseInt(connectionDetails.port),
-      database: service.database,
+      user: connection.username,
+      password: decryptDatabasePassword(connection.password),
+      server: connection.host,
+      port: parseInt(connection.port),
+      database: databaseName,
       options: {
         encrypt: true,
         trustServerCertificate: true,
@@ -113,7 +79,7 @@ async function handleProcedureRequest(req, res) {
     });
 
     // Execute the stored procedure
-    const result = await request.execute(req.params.procedureName);
+    const result = await request.execute(procedureName);
 
     if (!result || !result.recordset) {
       throw new Error('No results returned from stored procedure');
@@ -130,9 +96,9 @@ async function handleProcedureRequest(req, res) {
 
     // Log API usage (simplified for endpoint-based API keys)
     const apiUsage = new ApiUsage({
-      service: service._id,
+      connectionId: connection._id,
       endpoint: req.originalUrl,
-      component: req.params.procedureName,
+      component: procedureName,
       timestamp: new Date(),
       method: req.method,
       statusCode: 200
@@ -140,7 +106,7 @@ async function handleProcedureRequest(req, res) {
 
     await apiUsage.save();
     console.log('API Usage logged:', {
-      service: service.name,
+      service: connection.name,
       endpoint: req.params.procedureName,
       method: req.method
     });
@@ -148,9 +114,9 @@ async function handleProcedureRequest(req, res) {
     res.json(cleanResults);
   } catch (error) {
     // Log failed API calls too
-    if (req.service) {
+    if (req.apiKey) {
       const apiUsage = new ApiUsage({
-        service: req.service._id,
+        connectionId: req.connection ? req.connection._id : undefined,
         endpoint: req.originalUrl,
         component: req.params.procedureName,
         timestamp: new Date(),

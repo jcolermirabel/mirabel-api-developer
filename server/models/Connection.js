@@ -12,6 +12,7 @@ const connectionSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   failoverHost: { type: String, required: false },
+  databases: { type: [String], default: [] },
 }, { timestamps: true });
 
 // Pre-save middleware to encrypt password
@@ -69,6 +70,53 @@ connectionSchema.methods.testConnection = async function() {
       success: false,
       error: error.message
     };
+  }
+};
+
+// Method to fetch database list
+connectionSchema.methods.fetchDatabases = async function() {
+  let pool;
+  try {
+    const isEncrypted = this.password && this.password.includes(':');
+    const decryptedPassword = isEncrypted
+      ? decryptDatabasePassword(this.password)
+      : this.password;
+    
+    const config = {
+      user: this.username,
+      password: decryptedPassword,
+      server: this.host,
+      port: parseInt(this.port) || 1433,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true,
+        connectTimeout: 15000
+      }
+    };
+
+    pool = await sql.connect(config);
+    const result = await pool.request().query('SELECT name FROM sys.databases WHERE state = 0 ORDER BY name');
+    const databaseNames = result.recordset.map(record => record.name);
+    
+    return {
+        success: true,
+        databases: databaseNames
+    };
+
+  } catch (error) {
+    console.error(`Error fetching databases for connection ${this.name}:`, error);
+    return {
+        success: false,
+        error: error.message
+    };
+  } finally {
+    if (pool) {
+      try {
+        await pool.close();
+      } catch (e) {
+        console.error('Error closing SQL connection pool:', e);
+      }
+    }
   }
 };
 

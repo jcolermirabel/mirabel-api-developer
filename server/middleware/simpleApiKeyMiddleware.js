@@ -1,5 +1,4 @@
 const ApiKey = require('../models/ApiKey');
-const Service = require('../models/Service');
 const { logger } = require('./logger');
 
 class AuthenticationError extends Error {
@@ -23,54 +22,24 @@ const simpleApiKeyMiddleware = async (req, res, next) => {
     }
 
     // 2. Find and validate API key in the ApiKey model
-    const apiKey = await ApiKey.findOne({ 
-      key: apiKeyValue, 
-      isActive: true 
-    }).populate('endpointId');
+    const apiKey = await ApiKey.findOne({
+      key: apiKeyValue,
+      isActive: true
+    });
 
     if (!apiKey) {
       throw new AuthenticationError('Invalid or inactive API key', 401);
     }
-
-    // 3. Parse URL for service and procedure
-    const serviceName = req.params.serviceName;
-    const procedureName = req.params.procedureName;
-
-    if (!serviceName || !procedureName) {
-      throw new AuthenticationError('Invalid API URL format', 400, {
-        expectedFormat: '/api/v2/{database}/_proc/{procedure}'
-      });
-    }
-
-    // 4. Find and validate service (database)
-    const service = await Service.findOne({ 
-      name: serviceName,
-      isActive: true 
-    });
-
-    if (!service) {
-      throw new AuthenticationError('Database/Service not found or inactive', 404, {
-        serviceName,
-        message: `Database '${serviceName}' not found. Make sure the service exists for this database.`
-      });
-    }
-
-    // 5. Update last used timestamp for the API key
+    
+    // 3. Update last used timestamp and attach key to request
     apiKey.lastUsed = new Date();
     await apiKey.save();
-
-    // Set request properties for the route handler
-    req.apiKey = apiKey;
-    req.service = service;
-    req.procedureName = procedureName;
     
+    req.apiKey = apiKey;
+
     logger.info('Simple API key authentication successful', {
       requestId,
       apiKeyId: apiKey._id,
-      endpoint: apiKey.endpointId?.name || 'Unknown',
-      service: service.name,
-      database: service.database,
-      procedure: procedureName,
       processingTime: Date.now() - requestStart
     });
 

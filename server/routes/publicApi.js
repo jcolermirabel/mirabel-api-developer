@@ -99,6 +99,7 @@ async function handleProcedureRequest(req, res) {
       connectionId: connection._id,
       endpoint: req.originalUrl,
       component: procedureName,
+      databasename: databaseName,
       timestamp: new Date(),
       method: req.method,
       statusCode: 200
@@ -113,22 +114,42 @@ async function handleProcedureRequest(req, res) {
 
     res.json(cleanResults);
   } catch (error) {
+    let statusCode = 500;
+    let responseMessage = error.message;
+
+    // Gracefully handle 'stored procedure not found' error (MSSQL error number 2812)
+    if (error.number === 2812) {
+      statusCode = 404;
+      responseMessage = `Endpoint not found: The stored procedure '${req.params.procedureName}' does not exist on the target database.`;
+    }
+
     // Log failed API calls too
-    if (req.apiKey) {
+    if (req.apiKey) { // check if apiKey was attached
       const apiUsage = new ApiUsage({
         connectionId: req.connection ? req.connection._id : undefined,
         endpoint: req.originalUrl,
         component: req.params.procedureName,
+        databasename: req.params.serviceName,
         timestamp: new Date(),
         method: req.method,
-        statusCode: 500
+        statusCode: statusCode
       });
-      await apiUsage.save();
+      // Use a separate try/catch for logging to ensure the original error is always sent
+      try {
+        await apiUsage.save();
+      } catch (logError) {
+        console.error('Failed to log API usage:', logError);
+      }
     }
 
-    console.error('Public API error:', error);
-    res.status(500).json({ 
+    console.error('Public API error:', {
       message: error.message,
+      code: error.code,
+      number: error.number
+    });
+
+    res.status(statusCode).json({ 
+      message: responseMessage,
       code: error.code 
     });
   } finally {

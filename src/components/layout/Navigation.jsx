@@ -80,7 +80,8 @@ const Navigation = () => {
       text: 'API Documentation',
       icon: <DocsIcon />,
       path: '/documentation',
-      permission: 'canViewDocs'
+      permission: 'canViewDocs',
+      hidden: true
     },
     {
       text: 'API Usage Report',

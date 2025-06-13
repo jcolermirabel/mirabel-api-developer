@@ -13,13 +13,11 @@ router.use(authMiddleware);
 // Get API usage data
 router.get('/api-usage', async (req, res) => {
   try {
-    const { startDate, endDate, service, role, application, component, showDetails } = req.query;
+    const { startDate, endDate, databasename, component, showDetails } = req.query;
     console.log('API Usage Report Request:', {
       startDate,
       endDate,
-      service,
-      role,
-      application,
+      databasename,
       component,
       showDetails
     });
@@ -31,9 +29,7 @@ router.get('/api-usage', async (req, res) => {
       }
     };
 
-    if (service) match.service = new mongoose.Types.ObjectId(service);
-    if (role) match.role = new mongoose.Types.ObjectId(role);
-    if (application) match.application = new mongoose.Types.ObjectId(application);
+    if (databasename) match.databasename = databasename;
     if (component) match.component = component;
 
     let pipeline = [];
@@ -68,9 +64,7 @@ router.get('/api-usage', async (req, res) => {
         },
         {
           $project: {
-            serviceName: { $arrayElemAt: ['$serviceInfo.name', 0] },
-            roleName: { $arrayElemAt: ['$roleInfo.name', 0] },
-            applicationName: { $arrayElemAt: ['$applicationInfo.name', 0] },
+            databasename: 1,
             component: 1,
             method: 1,
             timestamp: 1
@@ -113,32 +107,25 @@ router.get('/api-usage', async (req, res) => {
         {
           $group: {
             _id: {
-              service: '$service',
+              databasename: '$databasename',
               component: '$component',
-              role: '$role',
-              application: '$application',
               method: '$method'
             },
-            count: { $sum: 1 },
-            serviceName: { $first: { $arrayElemAt: ['$serviceInfo.name', 0] } },
-            roleName: { $first: { $arrayElemAt: ['$roleInfo.name', 0] } },
-            applicationName: { $first: { $arrayElemAt: ['$applicationInfo.name', 0] } }
+            count: { $sum: 1 }
           }
         },
         {
           $project: {
             _id: 0,
-            serviceName: 1,
+            databasename: '$_id.databasename',
             component: '$_id.component',
-            roleName: 1,
-            applicationName: 1,
             method: '$_id.method',
             count: 1
           }
         },
         {
           $sort: {
-            serviceName: 1,
+            databasename: 1,
             component: 1,
             count: -1
           }
@@ -162,18 +149,27 @@ router.get('/api-usage', async (req, res) => {
 // Get unique components
 router.get('/components', async (req, res) => {
   try {
-    const { service, role, application } = req.query;
+    const { databasename } = req.query;
     
     const match = {};
-    if (service) match.service = new mongoose.Types.ObjectId(service);
-    if (role) match.role = new mongoose.Types.ObjectId(role);
-    if (application) match.application = new mongoose.Types.ObjectId(application);
+    if (databasename) match.databasename = databasename;
 
     const components = await ApiUsage.distinct('component', match);
     res.json(components);
   } catch (error) {
     console.error('Error fetching components:', error);
     res.status(500).json({ message: 'Failed to fetch components' });
+  }
+});
+
+// Get unique database names
+router.get('/database-names', async (req, res) => {
+  try {
+    const databaseNames = await ApiUsage.distinct('databasename');
+    res.json(databaseNames.filter(db => db)); // Filter out null/empty values
+  } catch (error) {
+    console.error('Error fetching database names:', error);
+    res.status(500).json({ message: 'Failed to fetch database names' });
   }
 });
 

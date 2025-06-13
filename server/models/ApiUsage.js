@@ -14,13 +14,9 @@ const apiUsageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  role: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role'
-  },
-  application: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Application'
+  databasename: {
+    type: String,
+    required: false
   },
   timestamp: {
     type: Date,
@@ -39,8 +35,7 @@ const apiUsageSchema = new mongoose.Schema({
 });
 
 apiUsageSchema.index({ connectionId: 1, timestamp: 1 });
-apiUsageSchema.index({ role: 1, timestamp: 1 });
-apiUsageSchema.index({ application: 1, timestamp: 1 });
+apiUsageSchema.index({ databasename: 1 });
 apiUsageSchema.index({ component: 1 });
 apiUsageSchema.index({ timestamp: 1 });
 

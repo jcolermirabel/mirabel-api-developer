@@ -28,13 +28,9 @@ import ExportMenu from '../common/ExportMenu';
 
 const ApiUsageReport = () => {
   const [loading, setLoading] = useState(false);
-  const [services, setServices] = useState([]);
-  const [roles, setRoles] = useState([]);
-  const [applications, setApplications] = useState([]);
+  const [databaseNames, setDatabaseNames] = useState([]);
   const [components, setComponents] = useState([]);
-  const [selectedService, setSelectedService] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [selectedApp, setSelectedApp] = useState('');
+  const [selectedDatabaseName, setSelectedDatabaseName] = useState('');
   const [selectedComponent, setSelectedComponent] = useState('');
   const [startDate, setStartDate] = useState(moment().subtract(7, 'days'));
   const [endDate, setEndDate] = useState(moment());
@@ -59,21 +55,12 @@ const ApiUsageReport = () => {
       try {
         // Build query params based on selections
         const params = {};
-        if (selectedService) params.service = selectedService;
+        if (selectedDatabaseName) params.databasename = selectedDatabaseName;
 
-        // Fetch services (always)
-        const servicesRes = await api.get('/api/services');
-        setServices(servicesRes.data);
-
-        // Fetch roles based on selected service
-        const rolesRes = await api.get('/api/roles', { params });
-        setRoles(rolesRes.data);
-
-        // Fetch applications based on selected service and role
-        if (selectedRole) params.role = selectedRole;
-        const appsRes = await api.get('/api/applications', { params });
-        setApplications(appsRes.data);
-
+        // Fetch unique database names
+        const databaseNamesRes = await api.get('/api/reports/database-names', { params });
+        setDatabaseNames(databaseNamesRes.data);
+        
         // Fetch unique components based on current filters
         const componentsRes = await api.get('/api/reports/components', { params });
         setComponents(componentsRes.data);
@@ -84,20 +71,11 @@ const ApiUsageReport = () => {
     };
 
     fetchFilters();
-  }, [selectedService, selectedRole]);
+  }, [selectedDatabaseName]);
 
-  const handleServiceChange = (event) => {
+  const handleDatabaseNameChange = (event) => {
     const value = event.target.value;
-    setSelectedService(value);
-    setSelectedRole('');
-    setSelectedApp('');
-    setSelectedComponent('');
-  };
-
-  const handleRoleChange = (event) => {
-    const value = event.target.value;
-    setSelectedRole(value);
-    setSelectedApp('');
+    setSelectedDatabaseName(value);
     setSelectedComponent('');
   };
 
@@ -117,9 +95,7 @@ const ApiUsageReport = () => {
         showDetails: showDetails ? 'true' : 'false'
       };
 
-      if (selectedService) params.service = selectedService;
-      if (selectedRole) params.role = selectedRole;
-      if (selectedApp) params.application = selectedApp;
+      if (selectedDatabaseName) params.databasename = selectedDatabaseName;
       if (selectedComponent) params.component = selectedComponent;
 
       const response = await api.get('/api/reports/api-usage', { params });
@@ -132,9 +108,7 @@ const ApiUsageReport = () => {
   };
 
   const handleReset = () => {
-    setSelectedService('');
-    setSelectedRole('');
-    setSelectedApp('');
+    setSelectedDatabaseName('');
     setSelectedComponent('');
     setStartDate(moment().subtract(7, 'days'));
     setEndDate(moment());
@@ -159,7 +133,7 @@ const ApiUsageReport = () => {
           : new Date(bValue) - new Date(aValue);
       }
 
-      if (typeof aValue === 'number') {
+      if (sortField === 'count' || sortField === 'databasename') {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
 
@@ -180,9 +154,7 @@ const ApiUsageReport = () => {
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           showDetails: newValue ? 'true' : 'false',
-          service: selectedService || undefined,
-          role: selectedRole || undefined,
-          application: selectedApp || undefined,
+          databasename: selectedDatabaseName || undefined,
           component: selectedComponent || undefined
         };
 
@@ -207,53 +179,20 @@ const ApiUsageReport = () => {
           {/* First row with filters */}
           <Box display="flex" gap={2} flexWrap="wrap">
             <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Service</InputLabel>
+              <InputLabel>Database Name</InputLabel>
               <Select
-                value={selectedService}
-                onChange={handleServiceChange}
-                label="Service"
+                value={selectedDatabaseName}
+                onChange={handleDatabaseNameChange}
+                label="Database Name"
               >
-                <MenuItem value="">All Services</MenuItem>
-                {services.map((service) => (
-                  <MenuItem key={service._id} value={service._id}>
-                    {service.name}
+                <MenuItem value="">All Databases</MenuItem>
+                {databaseNames.map((dbName) => (
+                  <MenuItem key={dbName} value={dbName}>
+                    {dbName}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={selectedRole}
-                onChange={handleRoleChange}
-                label="Role"
-              >
-                <MenuItem value="">All Roles</MenuItem>
-                {roles.map((role) => (
-                  <MenuItem key={role._id} value={role._id}>
-                    {role.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Application</InputLabel>
-              <Select
-                value={selectedApp}
-                onChange={(e) => setSelectedApp(e.target.value)}
-                label="Application"
-              >
-                <MenuItem value="">All Applications</MenuItem>
-                {applications.map((app) => (
-                  <MenuItem key={app._id} value={app._id}>
-                    {app.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel>Component</InputLabel>
               <Select
@@ -338,15 +277,6 @@ const ApiUsageReport = () => {
                 <TableRow>
                   <TableCell>
                     <TableSortLabel
-                      active={sortField === 'serviceName'}
-                      direction={sortField === 'serviceName' ? sortDirection : 'asc'}
-                      onClick={() => handleSort('serviceName')}
-                    >
-                      Service
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell>
-                    <TableSortLabel
                       active={sortField === 'component'}
                       direction={sortField === 'component' ? sortDirection : 'asc'}
                       onClick={() => handleSort('component')}
@@ -356,20 +286,11 @@ const ApiUsageReport = () => {
                   </TableCell>
                   <TableCell>
                     <TableSortLabel
-                      active={sortField === 'roleName'}
-                      direction={sortField === 'roleName' ? sortDirection : 'asc'}
-                      onClick={() => handleSort('roleName')}
+                      active={sortField === 'databasename'}
+                      direction={sortField === 'databasename' ? sortDirection : 'asc'}
+                      onClick={() => handleSort('databasename')}
                     >
-                      Role
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell>
-                    <TableSortLabel
-                      active={sortField === 'applicationName'}
-                      direction={sortField === 'applicationName' ? sortDirection : 'asc'}
-                      onClick={() => handleSort('applicationName')}
-                    >
-                      Application
+                      Database Name
                     </TableSortLabel>
                   </TableCell>
                   <TableCell>
@@ -407,10 +328,8 @@ const ApiUsageReport = () => {
               <TableBody>
                 {sortData([...usageData]).map((row, index) => (
                   <TableRow key={index}>
-                    <TableCell>{row.serviceName}</TableCell>
                     <TableCell>{row.component}</TableCell>
-                    <TableCell>{row.roleName}</TableCell>
-                    <TableCell>{row.applicationName}</TableCell>
+                    <TableCell>{row.databasename}</TableCell>
                     <TableCell>{row.method}</TableCell>
                     {showDetails ? (
                       <TableCell>
